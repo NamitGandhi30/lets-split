@@ -12,8 +12,5 @@
     "dev:api": "pnpm --filter @lets-split/api dev",
     "gen:api": "pnpm --filter @lets-split/api openapi && pnpm --filter @lets-split/web gen:api",
     "deploy:api": "npx -y supabase@3.2.0 functions deploy api --remote=hpsiylvlgzngoincqnca --no-verify-jwt --use-api"
-  },
-  "engines": {
-    "node": "22.x"
   }
 }

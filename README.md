@@ -48,5 +48,5 @@ Open http://localhost:5173 and sign in with an email code. Email setup is in
 - **API:** `npx supabase login` once, then `pnpm deploy:api`. It goes live at
   https://hpsiylvlgzngoincqnca.supabase.co/functions/v1/api/v1/health. JWT verification at the gateway is off
   because the function verifies tokens itself, so `openapi.json` and `health` stay public.
-- **Web:** Vercel (Hobby, free). Import the GitHub repo; `vercel.json` sets the install/build commands, output
-  `apps/web/dist`, the SPA fallback and cache headers. Production env values are in `apps/web/.env.production`.
+- **Web:** Vercel (Hobby, free). Import the GitHub repo with Root Directory `apps/web`;
+  `apps/web/vercel.json` sets the install/build commands, output `dist`, the SPA fallback and cache headers. Production env values are in `apps/web/.env.production`.
