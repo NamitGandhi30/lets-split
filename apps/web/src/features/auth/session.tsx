@@ -32,12 +32,31 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const s = useSession();
   const loc = useLocation();
   if (s.status === "loading") return <div className="h-full bg-chrome" />;
-  if (s.status === "signed-out") return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+  if (s.status === "signed-out") {
+    // Come back here (an invite link, say) after signing in.
+    if (loc.pathname !== "/") {
+      try {
+        sessionStorage.setItem("returnTo", loc.pathname + loc.search);
+      } catch {
+        /* storage blocked */
+      }
+    }
+    return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+  }
   return <>{children}</>;
 }
 
 export function RedirectIfSignedIn({ children }: { children: ReactNode }) {
   const s = useSession();
-  if (s.status === "signed-in") return <Navigate to="/" replace />;
+  if (s.status === "signed-in") {
+    let to = "/";
+    try {
+      to = sessionStorage.getItem("returnTo") || "/";
+      sessionStorage.removeItem("returnTo");
+    } catch {
+      /* storage blocked */
+    }
+    return <Navigate to={to.startsWith("/") && !to.startsWith("//") ? to : "/"} replace />;
+  }
   return <>{children}</>;
 }

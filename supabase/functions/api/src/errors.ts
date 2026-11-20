@@ -29,6 +29,7 @@ interface PgError {
 export function fromPg(e: PgError): ApiError {
   switch (e.code) {
     case "PGRST116":
+    case "P0002":
       return notFound();
     case "42501":
       return new ApiError(403, "FORBIDDEN", "You don't have access to that.");

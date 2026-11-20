@@ -7,7 +7,7 @@ declare
   gb uuid := gen_random_uuid();
   m_alice uuid; m_ph uuid; m_bob uuid;
   e uuid := gen_random_uuid();
-  n int; r jsonb;
+  n int; r jsonb; code text;
   out text[] := '{}';
 begin
   if alice is null or bob is null then raise exception 'create the two test users first'; end if;
@@ -92,6 +92,49 @@ begin
   select count(*) into n from public.groups; out := out || format('alice sees only her group: %s', n = 1);
   update public.expenses set deleted_at = now() where id = e; get diagnostics n = row_count;
   out := out || format('alice can soft-delete her expense: %s', n = 1);
+
+  -- ===== Phase 2: invites, claiming, edits =====
+  begin
+    perform public.update_expense(e, 'Villa', 300000, 'equal',
+      jsonb_build_array(jsonb_build_object('member_id', m_alice, 'amount_paise', 300000)),
+      jsonb_build_array(jsonb_build_object('member_id', m_alice, 'amount_paise', 300000)));
+    out := out || 'update_expense refuses a deleted expense: false';
+  exception when others then out := out || format('update_expense refuses a deleted expense: true (%s)', sqlstate); end;
+  update public.expenses set deleted_at = null where id = e;
+  perform public.update_expense(e, 'Villa 2', 400000, 'equal',
+    jsonb_build_array(jsonb_build_object('member_id', m_alice, 'amount_paise', 400000)),
+    jsonb_build_array(jsonb_build_object('member_id', m_alice, 'amount_paise', 200000), jsonb_build_object('member_id', m_ph, 'amount_paise', 200000)));
+  execute 'set constraints all immediate'; execute 'set constraints all deferred';
+  select count(*) into n from public.expense_history where expense_id = e and op = 'update';
+  out := out || format('alice edits via update_expense, history kept: %s', n >= 1);
+  code := public.rotate_invite(g);
+  out := out || format('alice rotates invite: %s', code is not null);
+
+  perform set_config('request.jwt.claims', json_build_object('sub', bob, 'role', 'authenticated')::text, true);
+  begin
+    perform public.rotate_invite(g);
+    out := out || 'bob cannot rotate alice invite: false';
+  exception when others then out := out || format('bob cannot rotate alice invite: true (%s)', sqlstate); end;
+  out := out || format('bad code previews nothing: %s', public.invite_preview('000000000000') is null);
+  r := public.invite_preview(code);
+  out := out || format('bob previews via code: %s', (r ->> 'name') = 'Goa ''26' and jsonb_array_length(r -> 'members') = 2);
+  select count(*) into n from public.groups where id = g; out := out || format('bob still cannot read group before joining: %s', n = 0);
+  begin
+    perform public.update_expense(e, 'Hack', 1, 'equal', '[]', '[]');
+    out := out || 'bob cannot edit before joining: false';
+  exception when others then out := out || format('bob cannot edit before joining: true (%s)', sqlstate); end;
+  r := public.join_group(code, m_ph);
+  out := out || format('bob claims placeholder: %s', (r ->> 'member_id')::uuid = m_ph);
+  select count(*) into n from public.expense_shares where group_id = g and member_id = m_ph;
+  out := out || format('bob sees history he inherited: %s', n = 1);
+  begin
+    perform public.join_group(code, m_alice);
+    out := out || format('second join is a no-op: %s', true);
+  exception when others then out := out || format('second join is a no-op: false (%s)', sqlstate); end;
+  begin
+    update public.group_members set user_id = bob where id = m_alice;
+    out := out || 'bob cannot hijack member user_id: false';
+  exception when others then out := out || format('bob cannot hijack member user_id: true (%s)', sqlstate); end;
 
   raise exception E'RLS RESULTS (rolled back)\n%', array_to_string(out, E'\n');
 end $t$;

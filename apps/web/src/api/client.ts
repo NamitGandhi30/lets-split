@@ -5,10 +5,17 @@ import type { components, paths } from "./schema";
 
 export type Schemas = components["schemas"];
 export type Group = Schemas["Group"];
-export type Member = Schemas["Member"];
+export type Member = Schemas["GroupMember"];
 export type Expense = Schemas["Expense"];
+export type ExpenseCreate = Schemas["ExpenseCreate"];
+export type SplitInput = Schemas["SplitInput"];
 export type Balances = Schemas["Balances"];
 export type Me = Schemas["Me"];
+export type Settlement = Schemas["Settlement"];
+export type ActivityItem = Schemas["ActivityItem"];
+export type InvitePreview = Schemas["InvitePreview"];
+export type Comment = Schemas["Comment"];
+export type HistoryEntry = Schemas["HistoryEntry"];
 
 export class ApiError extends Error {
   readonly status: number;
@@ -42,3 +49,6 @@ export async function unwrap<T>(p: Promise<{ data?: T; error?: unknown; response
   }
   return data;
 }
+
+/** Idempotency-Key header: the same key is resent on every retry of one user action. */
+export const idem = (key: string) => ({ headers: { "idempotency-key": key } });

@@ -29,6 +29,17 @@ describe("public endpoints", () => {
         "/api/v1/groups/{groupId}/members",
         "/api/v1/groups/{groupId}/members/{memberId}",
         "/api/v1/me",
+        "/api/v1/activity",
+        "/api/v1/activity/seen",
+        "/api/v1/expenses/{expenseId}/comments",
+        "/api/v1/expenses/{expenseId}/history",
+        "/api/v1/expenses/{expenseId}/restore",
+        "/api/v1/groups/{groupId}/archive",
+        "/api/v1/groups/{groupId}/invite",
+        "/api/v1/groups/{groupId}/settlements",
+        "/api/v1/invites/{code}",
+        "/api/v1/invites/{code}/join",
+        "/api/v1/settlements/{settlementId}",
       ].sort(),
     );
     expect(Object.keys(doc.paths["/api/v1/groups/{groupId}/expenses"]!).sort()).toEqual(["get", "post"]);

@@ -2,8 +2,8 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AppEnv } from "../context.ts";
 import { fromPg, must, notFound } from "../errors.ts";
-import { toGroup, toMember, type GroupRow, type MemberRow } from "../mappers.ts";
-import { Group, GroupCreate, GroupPatch, IdempotencyHeader, Member, MemberCreate, MemberPatch, Uuid } from "../schemas.ts";
+import { toGroup, toGroupMember, toMember, type GroupRow, type MemberProfileRow, type MemberRow } from "../mappers.ts";
+import { Group, GroupCreate, GroupPatch, IdempotencyHeader, Invite, Member, MemberCreate, MemberPatch, MemberWithPay, Uuid } from "../schemas.ts";
 import { auth, body, errors, json, router } from "./util.ts";
 
 export const groupRoutes = router();
@@ -139,16 +139,22 @@ groupRoutes.openapi(
     summary: "Members, including placeholders and removed members",
     ...auth,
     request: { params: GroupParams },
-    responses: { 200: json(z.object({ items: z.array(Member) }), "Members"), ...errors },
+    responses: { 200: json(z.object({ items: z.array(MemberWithPay) }), "Members, with each one's UPI ID for settling up"), ...errors },
   }),
   async (c) => {
     const { groupId } = c.req.valid("param");
     const me = c.get("user").id;
     const rows = must(
-      await c.get("db").from("group_members").select("*").eq("group_id", groupId).order("created_at").returns<MemberRow[]>(),
+      await c
+        .get("db")
+        .from("group_members")
+        .select("*, profiles!group_members_user_id_fkey(upi_id, no_upi, avatar_key)")
+        .eq("group_id", groupId)
+        .order("created_at")
+        .returns<MemberProfileRow[]>(),
     );
     if (!rows.some((m) => m.user_id === me && m.removed_at === null)) throw notFound("Group not found");
-    return c.json({ items: rows.map((m) => toMember(m, me)) }, 200);
+    return c.json({ items: rows.map((m) => toGroupMember(m, me)) }, 200);
   },
 );
 
@@ -202,5 +208,48 @@ groupRoutes.openapi(
     if (error) throw fromPg(error);
     if (!data) throw notFound("Member not found");
     return c.json(toMember(data, c.get("user").id), 200);
+  },
+);
+
+groupRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/groups/{groupId}/archive",
+    tags: ["groups"],
+    summary: "Archive (or unarchive) a trip",
+    ...auth,
+    request: { params: GroupParams, headers: IdempotencyHeader, ...body(z.object({ archived: z.boolean().default(true) }).strict()) },
+    responses: { 200: json(Group, "Updated group"), ...errors },
+  }),
+  async (c) => {
+    const db = c.get("db");
+    const { groupId } = c.req.valid("param");
+    const { archived } = c.req.valid("json");
+    const { data, error } = await db
+      .from("groups")
+      .update({ archived_at: archived ? new Date().toISOString() : null })
+      .eq("id", groupId)
+      .select("id");
+    if (error) throw fromPg(error);
+    if (!data?.length) throw notFound("Group not found");
+    return c.json(await loadGroup(db, groupId, c.get("user").id), 200);
+  },
+);
+
+groupRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/groups/{groupId}/invite",
+    tags: ["invites"],
+    summary: "Make a new invite code; the old link stops working",
+    ...auth,
+    request: { params: GroupParams, headers: IdempotencyHeader },
+    responses: { 200: json(Invite, "The new code"), ...errors },
+  }),
+  async (c) => {
+    const { groupId } = c.req.valid("param");
+    const { data, error } = await c.get("db").rpc("rotate_invite", { p_group: groupId });
+    if (error) throw error.code === "42501" ? notFound("Group not found") : fromPg(error);
+    return c.json({ inviteCode: data as string }, 200);
   },
 );

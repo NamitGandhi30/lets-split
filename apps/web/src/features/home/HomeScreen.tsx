@@ -1,16 +1,19 @@
 import { whatsappSummary } from "@lets-split/core";
 import { motion } from "motion/react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import type { Group } from "../../api/client";
-import { useBalances, useGroups, useMe, useMembers, useRecentExpenses } from "../../api/hooks";
+import { useActivity, useBalances, useGroups, useMe, useMembers, useRecentExpenses } from "../../api/hooks";
 import { Amount, useCountUp } from "../../ui/Amount";
 import { Avatar } from "../../ui/Avatar";
-import { BellIcon } from "../../ui/icons";
+import { BellIcon, PlusIcon } from "../../ui/icons";
 import { snappy } from "../../ui/motion";
 import { useToast } from "../../ui/Toast";
 import { EmptyStack, TripStack } from "./TripStack";
 import { ExpenseRow, RecentSheet } from "./RecentSheet";
+import { SettleSheet, type SettleTarget } from "../settle/SettleSheet";
+import { remindText, whatsappUrl } from "../settle/remind";
+import { TripFormSheet } from "../trips/TripFormSheet";
 
 function Pill({ children, primary, onClick }: { children: string; primary?: boolean; onClick?: () => void }) {
   return (
@@ -29,9 +32,22 @@ function Pill({ children, primary, onClick }: { children: string; primary?: bool
 export function HomeScreen() {
   const toast = useToast();
   const me = useMe();
-  const groups = useGroups();
+  const all = useGroups();
+  const nav = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const activity = useActivity();
+  const openGroups = useMemo(() => all.data?.filter((g) => !g.archivedAt), [all.data]);
+  const groups = { ...all, data: openGroups };
   const [current, setCurrent] = useState<Group | null>(null);
-  const trip = current && groups.data?.some((g) => g.id === current.id) ? current : (groups.data?.[0] ?? null);
+  const trip = current && openGroups?.some((g) => g.id === current.id) ? (openGroups.find((g) => g.id === current.id) ?? null) : (openGroups?.[0] ?? null);
+  const [settle, setSettle] = useState<SettleTarget | null>(null);
+  const newTrip = params.get("new") === "1";
+  const setNewTrip = (o: boolean) =>
+    setParams((p) => {
+      if (o) p.set("new", "1");
+      else p.delete("new");
+      return p;
+    }, { replace: true });
 
   const balances = useBalances(trip?.id);
   const members = useMembers(trip?.id);
@@ -89,18 +105,56 @@ export function HomeScreen() {
     }
   }
 
+  const unread = activity.data?.unreadCount ?? 0;
+  const transfers = balances.data?.transfers ?? [];
+  const myMember = trip?.myMemberId;
+
+  function settleUp() {
+    if (!trip) return setNewTrip(true);
+    const mine = transfers.filter((t) => t.from === myMember).sort((a, b) => b.amountPaise - a.amountPaise)[0];
+    if (mine) return setSettle(mine);
+    if (transfers.some((t) => t.to === myMember)) return nav(`/trips/${trip.id}?tab=bal`);
+    toast(`You're all square in ${trip.name}`);
+  }
+
+  function remind() {
+    if (!trip) return;
+    const owed = transfers.filter((t) => t.to === myMember);
+    if (!owed.length) return toast(net < 0 ? "You're the one who owes. Settle up instead?" : `Nobody owes you in ${trip.name}`);
+    const text = owed.map((t) => remindText(t, memberMap, trip.name)).join("\n\n");
+    window.open(whatsappUrl(text), "_blank", "noopener");
+  }
+
   return (
     <div ref={screen} className="relative h-full overflow-hidden bg-chrome pt-safe">
       <header className="flex items-center gap-2.5 px-[22px] pt-2">
         <Link to="/me" aria-label="Your profile">
           <Avatar seed={me.data?.id ?? "you"} avatarKey={me.data?.avatarKey ?? "you"} photoUrl={me.data?.avatarUrl} size={40} />
         </Link>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.92 }}
+          transition={snappy}
+          onClick={() => setNewTrip(true)}
+          aria-label="New trip"
+          className="ml-auto grid h-10 w-10 place-items-center rounded-full bg-surface text-on-dark"
+        >
+          <PlusIcon width={18} height={18} />
+        </motion.button>
         <Link
           to="/alerts"
-          aria-label="Alerts"
-          className="relative ml-auto grid h-10 w-10 place-items-center rounded-full bg-surface text-on-dark"
+          aria-label={unread ? `Alerts, ${unread} new` : "Alerts"}
+          className="relative grid h-10 w-10 place-items-center rounded-full bg-surface text-on-dark"
         >
           <BellIcon />
+          {unread > 0 && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 170, damping: 13 }}
+              className="absolute top-[9px] right-[10px] h-2 w-2 rounded-full bg-alert ring-2 ring-surface"
+            />
+          )}
         </Link>
       </header>
 
@@ -116,10 +170,10 @@ export function HomeScreen() {
           />
         </div>
         <div className="mt-3.5 flex gap-2">
-          <Pill primary onClick={() => toast("Settle up with UPI is coming in the next build")}>
+          <Pill primary onClick={settleUp}>
             Settle up
           </Pill>
-          <Pill onClick={() => toast("Reminders are coming in the next build")}>Remind</Pill>
+          <Pill onClick={remind}>Remind</Pill>
           <Pill onClick={share}>Share</Pill>
         </div>
       </section>
@@ -130,7 +184,9 @@ export function HomeScreen() {
         ) : groups.data?.length ? (
           <TripStack groups={groups.data} onChange={setCurrent} />
         ) : (
-          <EmptyStack />
+          <button type="button" onClick={() => setNewTrip(true)} className="block text-left">
+            <EmptyStack />
+          </button>
         )}
       </div>
 
@@ -144,7 +200,7 @@ export function HomeScreen() {
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => toast("The full trip page is coming in the next build")}
+                onClick={() => nav(`/trips/${trip.id}`)}
                 className="text-[13px] font-medium text-muted"
               >
                 See all ›
@@ -172,7 +228,9 @@ export function HomeScreen() {
           ) : recent.data?.items.length ? (
             <div key={trip.id}>
               {recent.data.items.map((e, i) => (
-                <ExpenseRow key={e.id} e={e} i={i} members={memberMap} myMemberId={trip.myMemberId} />
+                <Link key={e.id} to={`/expenses/${e.id}`} className="block">
+                  <ExpenseRow e={e} i={i} members={memberMap} myMemberId={trip.myMemberId} />
+                </Link>
               ))}
             </div>
           ) : (
@@ -180,6 +238,8 @@ export function HomeScreen() {
           )}
         </div>
       </RecentSheet>
+      <TripFormSheet open={newTrip} onClose={() => setNewTrip(false)} />
+      {trip && settle && <SettleSheet open onClose={() => setSettle(null)} group={trip} members={members.data ?? []} target={settle} />}
     </div>
   );
 }

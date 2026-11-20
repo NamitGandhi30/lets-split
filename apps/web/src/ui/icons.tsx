@@ -45,3 +45,48 @@ export const MailIcon = (p: SVGProps<SVGSVGElement>) => (
     <path d="m4 7 8 6 8-6" />
   </svg>
 );
+export const CheckIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base({ strokeWidth: 3.4, ...p })}>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </svg>
+);
+export const CopyIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base({ width: 18, height: 18, ...p })}>
+    <rect x="9" y="9" width="12" height="12" rx="3" />
+    <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+  </svg>
+);
+export const ShareIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base({ width: 18, height: 18, ...p })}>
+    <path d="M12 3v13M7 8l5-5 5 5" />
+    <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+  </svg>
+);
+export const DownloadIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base({ width: 18, height: 18, ...p })}>
+    <path d="M12 3v13M7 11l5 5 5-5M5 21h14" />
+  </svg>
+);
+export const MoreIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base({ fill: "currentColor", stroke: "none", ...p })}>
+    <circle cx="5" cy="12" r="2" />
+    <circle cx="12" cy="12" r="2" />
+    <circle cx="19" cy="12" r="2" />
+  </svg>
+);
+export const UserPlusIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base({ width: 18, height: 18, ...p })}>
+    <circle cx="9" cy="8" r="4" />
+    <path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6" />
+  </svg>
+);
+export const ChevronIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base({ width: 16, height: 16, ...p })}>
+    <path d="m9 6 6 6-6 6" />
+  </svg>
+);
+export const CloudOffIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base({ width: 14, height: 14, ...p })}>
+    <path d="M2 2l20 20M7 7a5 5 0 0 0 0 10h10M17.5 17A4.5 4.5 0 0 0 16 8.2 6 6 0 0 0 10 5" />
+  </svg>
+);

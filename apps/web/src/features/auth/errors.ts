@@ -17,6 +17,10 @@ export function friendlyAuthError(e: AuthError): string {
       ? "Email limit reached for this hour (Supabase's built-in mailer allows 2/hour; set up Brevo, see docs/SETUP-AUTH.md)."
       : "We've sent too many emails in the last hour. Please try again a bit later.";
   }
+  if (code === "request_timeout" || e.status === 504)
+    return import.meta.env.DEV
+      ? "The email server didn't answer in time (check the SMTP host/port in Supabase)."
+      : "Sending the code is taking too long. Please try again in a minute.";
   if (code === "otp_expired") return "That code has expired or is wrong. Check it, or send a new one.";
   if (code === "email_address_invalid") return "That email address doesn't look right.";
   if (code === "email_address_not_authorized")

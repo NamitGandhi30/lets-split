@@ -12,7 +12,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AppEnv } from "../context.ts";
 import { ApiError, fromPg, must, notFound } from "../errors.ts";
 import { EXPENSE_SELECT, toExpense, type ExpenseRow, type MemberRow } from "../mappers.ts";
-import { Balances, Expense, ExpenseCreate, ExpensePage, IdempotencyHeader, SplitInput, Uuid } from "../schemas.ts";
+import { Balances, Comment, CommentCreate, Expense, ExpenseCreate, ExpensePage, ExpenseUpdate, HistoryEntry, IdempotencyHeader, SplitInput, Uuid } from "../schemas.ts";
 import { auth, body, errors, json, router } from "./util.ts";
 
 export const expenseRoutes = router();
@@ -62,6 +62,27 @@ function splitMemberIds(s: z.infer<typeof SplitInput>): string[] {
     case "adjustment":
       return [...s.members, ...s.adjustments.map((a) => a.memberId)];
   }
+}
+
+type ExpenseInput = Omit<z.infer<typeof ExpenseCreate>, "id">;
+
+/** Validate who's involved, then compute payers and shares with packages/core. */
+function computeFor(members: MemberRow[], me: string, b: ExpenseInput) {
+  const active = new Set(members.filter((m) => m.removed_at === null).map((m) => m.id));
+  const myMember = members.find((m) => m.user_id === me)!;
+  const payers = b.payers ?? [{ memberId: myMember.id, amountPaise: b.amountPaise }];
+  const unknown = [...payers.map((p) => p.memberId), ...splitMemberIds(b.split)].filter((id) => !active.has(id));
+  if (unknown.length) {
+    throw new ApiError(422, "UNKNOWN_MEMBER", "Some people in this expense aren't in the group.", { memberIds: [...new Set(unknown)] });
+  }
+  if (new Set(payers.map((p) => p.memberId)).size !== payers.length) {
+    throw new ApiError(422, "DUPLICATE_MEMBER", "A payer is listed twice.");
+  }
+  return computeExpense({
+    total: b.amountPaise,
+    payers: Object.fromEntries(payers.map((p) => [p.memberId, p.amountPaise])),
+    split: toSplitSpec(b.split),
+  });
 }
 
 const rows = (a: Allocation) => Object.entries(a).map(([member_id, amount_paise]) => ({ member_id, amount_paise }));
@@ -129,23 +150,7 @@ expenseRoutes.openapi(
     const b = c.req.valid("json");
 
     const members = await activeMembers(db, groupId, me);
-    const active = new Set(members.filter((m) => m.removed_at === null).map((m) => m.id));
-    const myMember = members.find((m) => m.user_id === me)!;
-
-    const payers = b.payers ?? [{ memberId: myMember.id, amountPaise: b.amountPaise }];
-    const unknown = [...payers.map((p) => p.memberId), ...splitMemberIds(b.split)].filter((id) => !active.has(id));
-    if (unknown.length) {
-      throw new ApiError(422, "UNKNOWN_MEMBER", "Some people in this expense aren't in the group.", { memberIds: [...new Set(unknown)] });
-    }
-    if (new Set(payers.map((p) => p.memberId)).size !== payers.length) {
-      throw new ApiError(422, "DUPLICATE_MEMBER", "A payer is listed twice.");
-    }
-
-    const computed = computeExpense({
-      total: b.amountPaise,
-      payers: Object.fromEntries(payers.map((p) => [p.memberId, p.amountPaise])),
-      split: toSplitSpec(b.split),
-    });
+    const computed = computeFor(members, me, b);
 
     const res = await db.rpc("create_expense", {
       p_id: b.id,
@@ -280,5 +285,164 @@ expenseRoutes.openapi(
       },
       200,
     );
+  },
+);
+
+// ---------- edit, restore, comments, history ----------
+
+async function loadExpense(db: SupabaseClient, expenseId: string): Promise<ExpenseRow> {
+  const { data, error } = await db.from("expenses").select(EXPENSE_SELECT).eq("id", expenseId).maybeSingle<ExpenseRow>();
+  if (error) throw fromPg(error);
+  if (!data) throw notFound("Expense not found");
+  return data;
+}
+
+expenseRoutes.openapi(
+  createRoute({
+    method: "put",
+    path: "/expenses/{expenseId}",
+    tags: ["expenses"],
+    summary: "Replace an expense: amount, payers, split and details",
+    ...auth,
+    request: { params: ExpenseParams, headers: IdempotencyHeader, ...body(ExpenseUpdate) },
+    responses: { 200: json(Expense, "Updated"), ...errors },
+  }),
+  async (c) => {
+    const db = c.get("db");
+    const me = c.get("user").id;
+    const { expenseId } = c.req.valid("param");
+    const b = c.req.valid("json");
+    const existing = await loadExpense(db, expenseId);
+    if (existing.deleted_at) throw new ApiError(409, "DELETED", "Restore this expense before editing it.");
+    const members = await activeMembers(db, existing.group_id, me);
+    const computed = computeFor(members, me, b);
+    const { error } = await db.rpc("update_expense", {
+      p_id: expenseId,
+      p_description: b.description,
+      p_amount_paise: b.amountPaise,
+      p_split_type: b.split.type,
+      p_payers: rows(computed.payers),
+      p_shares: rows(computed.shares),
+      p_split_meta: b.split,
+      p_category: b.category ?? null,
+      p_spent_at: b.spentAt ?? null,
+      p_notes: b.notes ?? null,
+    });
+    if (error) throw fromPg(error);
+    return c.json(toExpense(await loadExpense(db, expenseId)), 200);
+  },
+);
+
+expenseRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/expenses/{expenseId}/restore",
+    tags: ["expenses"],
+    summary: "Bring back a deleted expense (undo)",
+    ...auth,
+    request: { params: ExpenseParams, headers: IdempotencyHeader },
+    responses: { 200: json(Expense, "Restored"), ...errors },
+  }),
+  async (c) => {
+    const db = c.get("db");
+    const { expenseId } = c.req.valid("param");
+    const { error } = await db.from("expenses").update({ deleted_at: null }).eq("id", expenseId).not("deleted_at", "is", null);
+    if (error) throw fromPg(error);
+    return c.json(toExpense(await loadExpense(db, expenseId)), 200);
+  },
+);
+
+async function names(db: SupabaseClient, groupId: string): Promise<Map<string, string>> {
+  const { data } = await db.from("group_members").select("user_id, display_name").eq("group_id", groupId).not("user_id", "is", null);
+  return new Map((data ?? []).map((m: { user_id: string; display_name: string }) => [m.user_id, m.display_name]));
+}
+
+interface CommentRow { id: string; expense_id: string; author_id: string; body: string; created_at: string }
+const COMMENT_SELECT = "id, expense_id, author_id, body, created_at";
+const toComment = (r: CommentRow, who: Map<string, string>) => ({
+  id: r.id, expenseId: r.expense_id, authorId: r.author_id, authorName: who.get(r.author_id) ?? "Someone", body: r.body, createdAt: r.created_at,
+});
+
+expenseRoutes.openapi(
+  createRoute({
+    method: "get",
+    path: "/expenses/{expenseId}/comments",
+    tags: ["expenses"],
+    summary: "Comments on an expense, oldest first",
+    ...auth,
+    request: { params: ExpenseParams },
+    responses: { 200: json(z.object({ items: z.array(Comment) }), "Comments"), ...errors },
+  }),
+  async (c) => {
+    const db = c.get("db");
+    const { expenseId } = c.req.valid("param");
+    const e = await loadExpense(db, expenseId);
+    const [res, who] = await Promise.all([
+      db.from("comments").select(COMMENT_SELECT).eq("expense_id", expenseId).is("deleted_at", null).order("created_at").returns<CommentRow[]>(),
+      names(db, e.group_id),
+    ]);
+    if (res.error) throw fromPg(res.error);
+    return c.json({ items: (res.data ?? []).map((r) => toComment(r, who)) }, 200);
+  },
+);
+
+expenseRoutes.openapi(
+  createRoute({
+    method: "post",
+    path: "/expenses/{expenseId}/comments",
+    tags: ["expenses"],
+    summary: "Comment on an expense",
+    ...auth,
+    request: { params: ExpenseParams, headers: IdempotencyHeader, ...body(CommentCreate) },
+    responses: { 201: json(Comment, "Added"), ...errors },
+  }),
+  async (c) => {
+    const db = c.get("db");
+    const me = c.get("user").id;
+    const { expenseId } = c.req.valid("param");
+    const b = c.req.valid("json");
+    const e = await loadExpense(db, expenseId);
+    const id = b.id ?? crypto.randomUUID();
+    const { error } = await db.from("comments").insert({ id, expense_id: expenseId, group_id: e.group_id, body: b.body, author_id: me });
+    if (error && error.code !== "23505") throw fromPg(error);
+    const r = must(await db.from("comments").select(COMMENT_SELECT).eq("id", id).single<CommentRow>());
+    return c.json(toComment(r, await names(db, e.group_id)), 201);
+  },
+);
+
+const TRACKED: Record<string, string> = {
+  description: "name", amount_paise: "amount", split_type: "split", split_meta: "split", category: "category", spent_at: "date", notes: "notes",
+};
+
+interface HistoryRow { id: number; op: "insert" | "update" | "delete" | "restore"; actor_id: string | null; before: unknown; after: unknown; created_at: string }
+
+expenseRoutes.openapi(
+  createRoute({
+    method: "get",
+    path: "/expenses/{expenseId}/history",
+    tags: ["expenses"],
+    summary: "Who added, changed, deleted or restored this expense",
+    ...auth,
+    request: { params: ExpenseParams },
+    responses: { 200: json(z.object({ items: z.array(HistoryEntry) }), "History, oldest first"), ...errors },
+  }),
+  async (c) => {
+    const db = c.get("db");
+    const { expenseId } = c.req.valid("param");
+    const e = await loadExpense(db, expenseId);
+    const [h, who] = await Promise.all([
+      db.from("expense_history").select("id, op, actor_id, before, after, created_at").eq("expense_id", expenseId).order("id").returns<HistoryRow[]>(),
+      names(db, e.group_id),
+    ]);
+    if (h.error) throw fromPg(h.error);
+    const items = (h.data ?? []).map((r) => {
+      const before = (r.before ?? {}) as Record<string, unknown>;
+      const after = (r.after ?? {}) as Record<string, unknown>;
+      const changes = r.op === "update"
+        ? [...new Set(Object.keys(TRACKED).filter((k) => JSON.stringify(before[k]) !== JSON.stringify(after[k])).map((k) => TRACKED[k]!))]
+        : [];
+      return { id: Number(r.id), op: r.op, actorId: r.actor_id, actorName: r.actor_id ? (who.get(r.actor_id) ?? null) : null, changes, createdAt: r.created_at };
+    });
+    return c.json({ items }, 200);
   },
 );

@@ -227,3 +227,101 @@ export const IdempotencyHeader = z.object({
     description: "Optional. Replaying a key returns the first response instead of writing again.",
   }),
 });
+
+// ---------- phase 2 ----------
+export const MemberWithPay = Member.extend({
+  upiId: z.string().nullable(),
+  noUpi: z.boolean(),
+}).openapi("GroupMember");
+
+export const ExpenseUpdate = ExpenseCreate.omit({ id: true }).openapi("ExpenseUpdate");
+
+export const InvitePreview = z
+  .object({
+    groupId: Uuid,
+    name: z.string(),
+    accent: z.string().nullable(),
+    emoji: z.string().nullable(),
+    location: z.string().nullable(),
+    startsOn: z.string().nullable(),
+    endsOn: z.string().nullable(),
+    archived: z.boolean(),
+    alreadyMember: z.boolean(),
+    members: z.array(z.object({ id: Uuid, displayName: z.string(), avatarKey: z.string().nullable(), isPlaceholder: z.boolean() })),
+  })
+  .openapi("InvitePreview");
+
+export const JoinRequest = z
+  .object({ claimMemberId: Uuid.optional().openapi({ description: "Placeholder member to take over" }) })
+  .strict()
+  .openapi("JoinRequest");
+
+export const JoinResult = z
+  .object({ groupId: Uuid, memberId: Uuid, alreadyMember: z.boolean() })
+  .openapi("JoinResult");
+
+export const Invite = z.object({ inviteCode: z.string() }).openapi("Invite");
+
+export const SettleMethod = z.enum(["upi", "cash", "other"]);
+export const Settlement = z
+  .object({
+    id: Uuid,
+    groupId: Uuid,
+    fromMemberId: Uuid,
+    toMemberId: Uuid,
+    amountPaise: PositivePaise,
+    method: SettleMethod,
+    note: z.string().nullable(),
+    settledAt: z.string(),
+    createdBy: Uuid,
+    deletedAt: z.string().nullable(),
+  })
+  .openapi("Settlement");
+
+export const SettlementCreate = z
+  .object({
+    id: Uuid.openapi({ description: "Generated on the device; replaying it never records twice." }),
+    fromMemberId: Uuid,
+    toMemberId: Uuid,
+    amountPaise: PositivePaise,
+    method: SettleMethod.default("upi"),
+    note: z.string().max(200).optional(),
+    settledAt: z.iso.datetime({ offset: true }).optional(),
+  })
+  .strict()
+  .openapi("SettlementCreate");
+
+export const Comment = z
+  .object({ id: Uuid, expenseId: Uuid, authorId: Uuid, authorName: z.string(), body: z.string(), createdAt: z.string() })
+  .openapi("Comment");
+export const CommentCreate = z
+  .object({ id: Uuid.optional(), body: z.string().trim().min(1).max(1000) })
+  .strict()
+  .openapi("CommentCreate");
+
+export const HistoryEntry = z
+  .object({ id: z.number().int(), op: z.enum(["insert", "update", "delete", "restore"]), actorId: Uuid.nullable(), actorName: z.string().nullable(), changes: z.array(z.string()), createdAt: z.string() })
+  .openapi("HistoryEntry");
+
+export const ActivityItem = z
+  .object({
+    id: z.number().int(),
+    groupId: Uuid,
+    groupName: z.string(),
+    groupAccent: z.string().nullable(),
+    kind: z.string(),
+    entityId: Uuid.nullable(),
+    actorId: Uuid.nullable(),
+    actorMemberId: Uuid.nullable(),
+    actorName: z.string().nullable(),
+    actorAvatarKey: z.string().nullable(),
+    isMine: z.boolean(),
+    unread: z.boolean(),
+    data: z.record(z.string(), z.unknown()),
+    createdAt: z.string(),
+  })
+  .openapi("ActivityItem");
+
+export const ActivityFeed = z
+  .object({ items: z.array(ActivityItem), unreadCount: z.number().int(), seenAt: z.string() })
+  .openapi("ActivityFeed");

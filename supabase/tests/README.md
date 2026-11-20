@@ -5,4 +5,4 @@ bob@lets-split.test). Run it in the SQL editor or through the Supabase MCP `exec
 It impersonates each user as the `authenticated` role, prints every check, and always ends with
 `RAISE EXCEPTION`, so nothing it writes is kept. Every line should end in `t` or `true`.
 
-Last run (2026-11-20): all 23 checks passed.
+Last run (2026-11-21): all 23 phase-1 checks and 14 phase-2 checks (invites, claiming, update_expense, rotate_invite) passed.

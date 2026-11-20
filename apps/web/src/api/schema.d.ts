@@ -431,14 +431,14 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Members */
+                /** @description Members, with each one's UPI ID for settling up */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            items: components["schemas"]["Member"][];
+                            items: components["schemas"]["GroupMember"][];
                         };
                     };
                 };
@@ -633,6 +633,167 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/api/v1/groups/{groupId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive (or unarchive) a trip */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Optional. Replaying a key returns the first response instead of writing again. */
+                    "idempotency-key"?: string;
+                };
+                path: {
+                    groupId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @default true */
+                        archived?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Updated group */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Group"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{groupId}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Make a new invite code; the old link stops working */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Optional. Replaying a key returns the first response instead of writing again. */
+                    "idempotency-key"?: string;
+                };
+                path: {
+                    groupId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The new code */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Invite"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/groups/{groupId}/expenses": {
@@ -856,7 +1017,72 @@ export interface paths {
                 };
             };
         };
-        put?: never;
+        /** Replace an expense: amount, payers, split and details */
+        put: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Optional. Replaying a key returns the first response instead of writing again. */
+                    "idempotency-key"?: string;
+                };
+                path: {
+                    expenseId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ExpenseUpdate"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Expense"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
         post?: never;
         /** Delete an expense (soft delete; it can be restored) */
         delete: {
@@ -1012,6 +1238,852 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/expenses/{expenseId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bring back a deleted expense (undo) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Optional. Replaying a key returns the first response instead of writing again. */
+                    "idempotency-key"?: string;
+                };
+                path: {
+                    expenseId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Restored */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Expense"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/expenses/{expenseId}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Comments on an expense, oldest first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    expenseId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Comments */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["Comment"][];
+                        };
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Comment on an expense */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Optional. Replaying a key returns the first response instead of writing again. */
+                    "idempotency-key"?: string;
+                };
+                path: {
+                    expenseId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CommentCreate"];
+                };
+            };
+            responses: {
+                /** @description Added */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Comment"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/expenses/{expenseId}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who added, changed, deleted or restored this expense */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    expenseId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description History, oldest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["HistoryEntry"][];
+                        };
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invites/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** See the trip behind an invite link before joining */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The trip, its people and the placeholders you could claim */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["InvitePreview"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invites/{code}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join a trip, optionally claiming a placeholder so its history becomes yours */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Optional. Replaying a key returns the first response instead of writing again. */
+                    "idempotency-key"?: string;
+                };
+                path: {
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["JoinRequest"];
+                };
+            };
+            responses: {
+                /** @description Joined (or already a member) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["JoinResult"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Spot already claimed */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": unknown;
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{groupId}/settlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Settle-ups recorded in a group, newest first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    groupId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Settlements */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["Settlement"][];
+                        };
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Record a payment between two members (UPI, cash or other)
+         * @description Replaying the same `id` returns the original settlement with status 200.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Optional. Replaying a key returns the first response instead of writing again. */
+                    "idempotency-key"?: string;
+                };
+                path: {
+                    groupId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SettlementCreate"];
+                };
+            };
+            responses: {
+                /** @description Already recorded (replayed id) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Settlement"];
+                    };
+                };
+                /** @description Recorded */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Settlement"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settlements/{settlementId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Undo a settle-up */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Optional. Replaying a key returns the first response instead of writing again. */
+                    "idempotency-key"?: string;
+                };
+                path: {
+                    settlementId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * Format: uuid
+                             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+                             */
+                            id: string;
+                        };
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alerts across all my groups, newest first
+         * @description Settlement items carry `fromName`/`toName` in `data`. `unread` counts other people's actions since you last opened alerts.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                    groupId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Feed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ActivityFeed"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activity/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark every alert as read (clears the red dot) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Marked */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            seenAt: string;
+                        };
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1124,6 +2196,10 @@ export interface components {
             endsOn?: string | null;
             simplifyDebts?: boolean;
         };
+        GroupMember: components["schemas"]["Member"] & {
+            upiId: string | null;
+            noUpi: boolean;
+        };
         Member: {
             /**
              * Format: uuid
@@ -1158,6 +2234,9 @@ export interface components {
             displayName?: string;
             avatarKey?: string | null;
             removed?: boolean;
+        };
+        Invite: {
+            inviteCode: string;
         };
         ExpensePage: {
             items: components["schemas"]["Expense"][];
@@ -1351,6 +2430,226 @@ export interface components {
                 memberId: string;
                 netPaise: number;
             } | null;
+        };
+        ExpenseUpdate: {
+            description: string;
+            /**
+             * @description Integer paise (₹1 = 100).
+             * @example 428050
+             */
+            amountPaise: number;
+            category?: string;
+            /** Format: date-time */
+            spentAt?: string;
+            notes?: string;
+            /** @description Who paid. Defaults to the caller paying the whole amount. */
+            payers?: {
+                /**
+                 * Format: uuid
+                 * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+                 */
+                memberId: string;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                amountPaise: number;
+            }[];
+            split: components["schemas"]["SplitInput"];
+        };
+        Comment: {
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            expenseId: string;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            authorId: string;
+            authorName: string;
+            body: string;
+            createdAt: string;
+        };
+        CommentCreate: {
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            id?: string;
+            body: string;
+        };
+        HistoryEntry: {
+            id: number;
+            /** @enum {string} */
+            op: "insert" | "update" | "delete" | "restore";
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            actorId: string | null;
+            actorName: string | null;
+            changes: string[];
+            createdAt: string;
+        };
+        InvitePreview: {
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            groupId: string;
+            name: string;
+            accent: string | null;
+            emoji: string | null;
+            location: string | null;
+            startsOn: string | null;
+            endsOn: string | null;
+            archived: boolean;
+            alreadyMember: boolean;
+            members: {
+                /**
+                 * Format: uuid
+                 * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+                 */
+                id: string;
+                displayName: string;
+                avatarKey: string | null;
+                isPlaceholder: boolean;
+            }[];
+        };
+        JoinResult: {
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            groupId: string;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            memberId: string;
+            alreadyMember: boolean;
+        };
+        JoinRequest: {
+            /**
+             * Format: uuid
+             * @description Placeholder member to take over
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            claimMemberId?: string;
+        };
+        Settlement: {
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            groupId: string;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            fromMemberId: string;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            toMemberId: string;
+            /**
+             * @description Integer paise (₹1 = 100).
+             * @example 428050
+             */
+            amountPaise: number;
+            /** @enum {string} */
+            method: "upi" | "cash" | "other";
+            note: string | null;
+            settledAt: string;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            createdBy: string;
+            deletedAt: string | null;
+        };
+        SettlementCreate: {
+            /**
+             * Format: uuid
+             * @description Generated on the device; replaying it never records twice.
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            fromMemberId: string;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            toMemberId: string;
+            /**
+             * @description Integer paise (₹1 = 100).
+             * @example 428050
+             */
+            amountPaise: number;
+            /**
+             * @default upi
+             * @enum {string}
+             */
+            method: "upi" | "cash" | "other";
+            note?: string;
+            /** Format: date-time */
+            settledAt?: string;
+        };
+        ActivityFeed: {
+            items: components["schemas"]["ActivityItem"][];
+            unreadCount: number;
+            seenAt: string;
+        };
+        ActivityItem: {
+            id: number;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            groupId: string;
+            groupName: string;
+            groupAccent: string | null;
+            kind: string;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            entityId: string | null;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            actorId: string | null;
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            actorMemberId: string | null;
+            actorName: string | null;
+            actorAvatarKey: string | null;
+            isMine: boolean;
+            unread: boolean;
+            data: {
+                [key: string]: unknown;
+            };
+            createdAt: string;
         };
     };
     responses: never;

@@ -6,9 +6,10 @@ import { idempotency, requireAuth } from "./middleware.ts";
 import { expenseRoutes } from "./routes/expenses.ts";
 import { groupRoutes } from "./routes/groups.ts";
 import { meRoutes } from "./routes/me.ts";
+import { socialRoutes } from "./routes/social.ts";
 import { router, validationHook } from "./routes/util.ts";
 
-export const API_VERSION = "0.1.0";
+export const API_VERSION = "0.2.0";
 
 export interface AppOptions {
   env?: () => Env;
@@ -63,6 +64,7 @@ export function createApp(opts: AppOptions = {}) {
   v1.route("/", meRoutes);
   v1.route("/", groupRoutes);
   v1.route("/", expenseRoutes);
+  v1.route("/", socialRoutes);
   app.route("/v1", v1);
 
   app.notFound((c) => c.json(errorBody("NOT_FOUND", "No such endpoint."), 404));

@@ -121,3 +121,40 @@ export const toExpense = (e: ExpenseRow) => ({
   payers: e.expense_payers.map((p) => ({ memberId: p.member_id, amountPaise: Number(p.amount_paise) })),
   shares: e.expense_shares.map((s) => ({ memberId: s.member_id, amountPaise: Number(s.amount_paise) })),
 });
+
+export interface MemberProfileRow extends MemberRow {
+  profiles: { upi_id: string | null; no_upi: boolean; avatar_key: string | null } | null;
+}
+
+export const toGroupMember = (m: MemberProfileRow, me: string) => ({
+  ...toMember(m, me),
+  avatarKey: m.avatar_key ?? m.profiles?.avatar_key ?? null,
+  upiId: m.profiles?.upi_id ?? null,
+  noUpi: m.profiles?.no_upi ?? false,
+});
+
+export interface SettlementRow {
+  id: string;
+  group_id: string;
+  from_member: string;
+  to_member: string;
+  amount_paise: number;
+  method: "upi" | "cash" | "other";
+  note: string | null;
+  settled_at: string;
+  created_by: string;
+  deleted_at: string | null;
+}
+
+export const toSettlement = (s: SettlementRow) => ({
+  id: s.id,
+  groupId: s.group_id,
+  fromMemberId: s.from_member,
+  toMemberId: s.to_member,
+  amountPaise: Number(s.amount_paise),
+  method: s.method,
+  note: s.note,
+  settledAt: s.settled_at,
+  createdBy: s.created_by,
+  deletedAt: s.deleted_at,
+});

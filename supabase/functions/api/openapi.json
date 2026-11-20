@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Let's Split API",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Versioned REST API behind the Let's Split app. Money is always integer paise. Every write accepts an Idempotency-Key header, and ids for new groups and expenses are generated on the device."
   },
   "servers": [
@@ -352,6 +352,31 @@
         },
         "additionalProperties": false
       },
+      "GroupMember": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Member"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "upiId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "noUpi": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "upiId",
+              "noUpi"
+            ]
+          }
+        ]
+      },
       "Member": {
         "type": "object",
         "properties": {
@@ -460,6 +485,17 @@
           }
         },
         "additionalProperties": false
+      },
+      "Invite": {
+        "type": "object",
+        "properties": {
+          "inviteCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "inviteCode"
+        ]
       },
       "ExpensePage": {
         "type": "object",
@@ -985,6 +1021,538 @@
           "transfers",
           "me"
         ]
+      },
+      "ExpenseUpdate": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "amountPaise": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000000,
+            "description": "Integer paise (₹1 = 100).",
+            "example": 428050
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "spentAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "payers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "memberId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+                },
+                "amountPaise": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000000000,
+                  "description": "Integer paise (₹1 = 100).",
+                  "example": 428050
+                }
+              },
+              "required": [
+                "memberId",
+                "amountPaise"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "description": "Who paid. Defaults to the caller paying the whole amount."
+          },
+          "split": {
+            "$ref": "#/components/schemas/SplitInput"
+          }
+        },
+        "required": [
+          "description",
+          "amountPaise",
+          "split"
+        ],
+        "additionalProperties": false
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "expenseId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "authorId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "expenseId",
+          "authorId",
+          "authorName",
+          "body",
+          "createdAt"
+        ]
+      },
+      "CommentCreate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "HistoryEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              "insert",
+              "update",
+              "delete",
+              "restore"
+            ]
+          },
+          "actorId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "actorName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "op",
+          "actorId",
+          "actorName",
+          "changes",
+          "createdAt"
+        ]
+      },
+      "InvitePreview": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "name": {
+            "type": "string"
+          },
+          "accent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "emoji": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "startsOn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "endsOn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "alreadyMember": {
+            "type": "boolean"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "avatarKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "isPlaceholder": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "displayName",
+                "avatarKey",
+                "isPlaceholder"
+              ]
+            }
+          }
+        },
+        "required": [
+          "groupId",
+          "name",
+          "accent",
+          "emoji",
+          "location",
+          "startsOn",
+          "endsOn",
+          "archived",
+          "alreadyMember",
+          "members"
+        ]
+      },
+      "JoinResult": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "memberId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "alreadyMember": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "groupId",
+          "memberId",
+          "alreadyMember"
+        ]
+      },
+      "JoinRequest": {
+        "type": "object",
+        "properties": {
+          "claimMemberId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+            "description": "Placeholder member to take over"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Settlement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "fromMemberId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "toMemberId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000000,
+            "description": "Integer paise (₹1 = 100).",
+            "example": 428050
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "upi",
+              "cash",
+              "other"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "settledAt": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "deletedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "fromMemberId",
+          "toMemberId",
+          "amountPaise",
+          "method",
+          "note",
+          "settledAt",
+          "createdBy",
+          "deletedAt"
+        ]
+      },
+      "SettlementCreate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+            "description": "Generated on the device; replaying it never records twice."
+          },
+          "fromMemberId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "toMemberId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000000,
+            "description": "Integer paise (₹1 = 100).",
+            "example": 428050
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "upi",
+              "cash",
+              "other"
+            ],
+            "default": "upi"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "settledAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "fromMemberId",
+          "toMemberId",
+          "amountPaise"
+        ],
+        "additionalProperties": false
+      },
+      "ActivityFeed": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityItem"
+            }
+          },
+          "unreadCount": {
+            "type": "integer"
+          },
+          "seenAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "unreadCount",
+          "seenAt"
+        ]
+      },
+      "ActivityItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "groupName": {
+            "type": "string"
+          },
+          "groupAccent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "actorId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "actorMemberId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "actorName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "actorAvatarKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "isMine": {
+            "type": "boolean"
+          },
+          "unread": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "groupName",
+          "groupAccent",
+          "kind",
+          "entityId",
+          "actorId",
+          "actorMemberId",
+          "actorName",
+          "actorAvatarKey",
+          "isMine",
+          "unread",
+          "data",
+          "createdAt"
+        ]
       }
     },
     "parameters": {}
@@ -1490,7 +2058,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Members",
+            "description": "Members, with each one's UPI ID for settling up",
             "content": {
               "application/json": {
                 "schema": {
@@ -1499,7 +2067,7 @@
                     "items": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/Member"
+                        "$ref": "#/components/schemas/GroupMember"
                       }
                     }
                   },
@@ -1712,6 +2280,201 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Member"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/groups/{groupId}/archive": {
+      "post": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Archive (or unarchive) a trip",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "groupId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+              "description": "Optional. Replaying a key returns the first response instead of writing again."
+            },
+            "required": false,
+            "description": "Optional. Replaying a key returns the first response instead of writing again.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "archived": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/groups/{groupId}/invite": {
+      "post": {
+        "tags": [
+          "invites"
+        ],
+        "summary": "Make a new invite code; the old link stops working",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "groupId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+              "description": "Optional. Replaying a key returns the first response instead of writing again."
+            },
+            "required": false,
+            "description": "Optional. Replaying a key returns the first response instead of writing again.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The new code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invite"
                 }
               }
             }
@@ -2142,6 +2905,103 @@
             }
           }
         }
+      },
+      "put": {
+        "tags": [
+          "expenses"
+        ],
+        "summary": "Replace an expense: amount, payers, split and details",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "expenseId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+              "description": "Optional. Replaying a key returns the first response instead of writing again."
+            },
+            "required": false,
+            "description": "Optional. Replaying a key returns the first response instead of writing again.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/groups/{groupId}/balances": {
@@ -2189,6 +3049,1009 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Balances"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/expenses/{expenseId}/restore": {
+      "post": {
+        "tags": [
+          "expenses"
+        ],
+        "summary": "Bring back a deleted expense (undo)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "expenseId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+              "description": "Optional. Replaying a key returns the first response instead of writing again."
+            },
+            "required": false,
+            "description": "Optional. Replaying a key returns the first response instead of writing again.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Expense"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/expenses/{expenseId}/comments": {
+      "get": {
+        "tags": [
+          "expenses"
+        ],
+        "summary": "Comments on an expense, oldest first",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "expenseId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Comment"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "expenses"
+        ],
+        "summary": "Comment on an expense",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "expenseId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+              "description": "Optional. Replaying a key returns the first response instead of writing again."
+            },
+            "required": false,
+            "description": "Optional. Replaying a key returns the first response instead of writing again.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/expenses/{expenseId}/history": {
+      "get": {
+        "tags": [
+          "expenses"
+        ],
+        "summary": "Who added, changed, deleted or restored this expense",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "expenseId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History, oldest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/HistoryEntry"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invites/{code}": {
+      "get": {
+        "tags": [
+          "invites"
+        ],
+        "summary": "See the trip behind an invite link before joining",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{6,32}$/i",
+              "example": "a1b2c3d4e5f6"
+            },
+            "required": true,
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The trip, its people and the placeholders you could claim",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitePreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invites/{code}/join": {
+      "post": {
+        "tags": [
+          "invites"
+        ],
+        "summary": "Join a trip, optionally claiming a placeholder so its history becomes yours",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{6,32}$/i",
+              "example": "a1b2c3d4e5f6"
+            },
+            "required": true,
+            "name": "code",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+              "description": "Optional. Replaying a key returns the first response instead of writing again."
+            },
+            "required": false,
+            "description": "Optional. Replaying a key returns the first response instead of writing again.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Joined (or already a member)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Spot already claimed",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/groups/{groupId}/settlements": {
+      "get": {
+        "tags": [
+          "settlements"
+        ],
+        "summary": "Settle-ups recorded in a group, newest first",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "groupId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settlements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Settlement"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "settlements"
+        ],
+        "summary": "Record a payment between two members (UPI, cash or other)",
+        "description": "Replaying the same `id` returns the original settlement with status 200.",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "groupId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+              "description": "Optional. Replaying a key returns the first response instead of writing again."
+            },
+            "required": false,
+            "description": "Optional. Replaying a key returns the first response instead of writing again.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettlementCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Already recorded (replayed id)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settlement"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settlement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settlements/{settlementId}": {
+      "delete": {
+        "tags": [
+          "settlements"
+        ],
+        "summary": "Undo a settle-up",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "settlementId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+              "description": "Optional. Replaying a key returns the first response instead of writing again."
+            },
+            "required": false,
+            "description": "Optional. Replaying a key returns the first response instead of writing again.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/activity": {
+      "get": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Alerts across all my groups, newest first",
+        "description": "Settlement items carry `fromName`/`toName` in `data`. `unread` counts other people's actions since you last opened alerts.",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": false,
+            "name": "groupId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityFeed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/activity/seen": {
+      "post": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Mark every alert as read (clears the red dot)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Marked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "seenAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "seenAt"
+                  ]
                 }
               }
             }

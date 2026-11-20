@@ -2,6 +2,14 @@
   "version": "0.0.1",
   "configurations": [
     { "name": "api", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev:api"], "port": 8787 },
-    { "name": "web", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev:web"], "port": 5173 }
+    { "name": "web", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev:web"], "port": 5173 },
+    { "name": "api-alt", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev:api"], "port": 8788, "env": { "PORT": "8788" } },
+    {
+      "name": "web-alt",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@lets-split/web", "exec", "vite", "--port", "5174", "--strictPort"],
+      "port": 5174,
+      "env": { "API_DEV_URL": "http://127.0.0.1:8788" }
+    }
   ]
 }
