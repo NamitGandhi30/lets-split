@@ -10,6 +10,10 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "dev:web": "pnpm --filter @lets-split/web dev",
     "dev:api": "pnpm --filter @lets-split/api dev",
-    "gen:api": "pnpm --filter @lets-split/api openapi && pnpm --filter @lets-split/web gen:api"
+    "gen:api": "pnpm --filter @lets-split/api openapi && pnpm --filter @lets-split/web gen:api",
+    "deploy:api": "npx -y supabase@3.2.0 functions deploy api --remote=hpsiylvlgzngoincqnca --no-verify-jwt --use-api"
+  },
+  "devDependencies": {
+    "wrangler": "4.166.0"
   }
 }

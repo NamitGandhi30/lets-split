@@ -45,7 +45,8 @@ Open http://localhost:5173 and sign in with an email code. Email setup is in
 
 ## Deploy
 
-- **API:** `npx supabase login` once, then
-  `npx supabase functions deploy api --project-ref hpsiylvlgzngoincqnca --no-verify-jwt --use-api`.
-  The function verifies JWTs itself so that `openapi.json` and `health` stay public.
-- **Web:** any static host. Build with `pnpm build` and serve `apps/web/dist` with an SPA fallback to `index.html`.
+- **API:** `npx supabase login` once, then `pnpm deploy:api`. It goes live at
+  https://hpsiylvlgzngoincqnca.supabase.co/functions/v1/api/v1/health. JWT verification at the gateway is off
+  because the function verifies tokens itself, so `openapi.json` and `health` stay public.
+- **Web:** Cloudflare Workers static assets (`wrangler.jsonc`). Connect the GitHub repo in Cloudflare with build command
+  `pnpm build` and deploy command `npx wrangler deploy`; production env values are in `apps/web/.env.production`.
