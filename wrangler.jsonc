@@ -4,6 +4,9 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "lets-split",
   "compatibility_date": "2026-11-01",
+  // Serve on lets-split.<account>.workers.dev, and give each preview build its own URL.
+  "workers_dev": true,
+  "preview_urls": true,
   "assets": {
     "directory": "./apps/web/dist",
     // Unknown paths like /stats get index.html so React Router can handle them.
