@@ -4,9 +4,25 @@ import { env } from "../../lib/env";
 import { supabase } from "../../lib/supabase";
 import { MailIcon } from "../../ui/icons";
 import { AuthLayout, Cta } from "./AuthLayout";
-import { friendlyAuthError } from "./errors";
+import { cooldownSeconds, friendlyAuthError } from "./errors";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/** Common domain typos (someone typed gmai.com and never got a code). */
+const TYPOS: Record<string, string> = {
+  "gmai.com": "gmail.com", "gmial.com": "gmail.com", "gmal.com": "gmail.com", "gamil.com": "gmail.com",
+  "gmail.co": "gmail.com", "gmail.con": "gmail.com", "gmail.cm": "gmail.com", "gnail.com": "gmail.com",
+  "yaho.com": "yahoo.com", "yahoo.co": "yahoo.com", "yahooo.com": "yahoo.com",
+  "hotmial.com": "hotmail.com", "hotmai.com": "hotmail.com", "outlok.com": "outlook.com", "outlook.co": "outlook.com",
+  "icoud.com": "icloud.com", "iclod.com": "icloud.com", "rediffmai.com": "rediffmail.com",
+};
+
+function suggestEmail(email: string): string | null {
+  const at = email.lastIndexOf("@");
+  if (at < 1) return null;
+  const fix = TYPOS[email.slice(at + 1).toLowerCase()];
+  return fix ? email.slice(0, at + 1) + fix : null;
+}
 
 export function EmailScreen() {
   const nav = useNavigate();
@@ -14,6 +30,17 @@ export function EmailScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const valid = EMAIL.test(email.trim());
+  const suggestion = suggestEmail(email.trim());
+
+  const goToCode = (addr: string, sentAt = Date.now()) => {
+    try {
+      sessionStorage.setItem("ls:email", addr);
+      sessionStorage.setItem("ls:sentAt", String(sentAt));
+    } catch {
+      /* private mode: fine */
+    }
+    nav("/login/code", { state: { email: addr } });
+  };
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -23,14 +50,13 @@ export function EmailScreen() {
     const addr = email.trim().toLowerCase();
     const { error } = await supabase.auth.signInWithOtp({ email: addr, options: { shouldCreateUser: true } });
     setBusy(false);
-    if (error) return setError(friendlyAuthError(error));
-    try {
-      sessionStorage.setItem("ls:email", addr);
-      sessionStorage.setItem("ls:sentAt", String(Date.now()));
-    } catch {
-      /* private mode: fine */
+    if (error) {
+      // Per-address cooldown means this address was emailed seconds ago: the code is on its way.
+      const wait = cooldownSeconds(error);
+      if (wait !== null) return goToCode(addr, Date.now() - (60 - wait) * 1000);
+      return setError(friendlyAuthError(error));
     }
-    nav("/login/code", { state: { email: addr } });
+    goToCode(addr);
   }
 
   return (
@@ -65,9 +91,19 @@ export function EmailScreen() {
             className="h-full w-full bg-transparent text-[16px] font-medium outline-none placeholder:text-[#B4B8C0]"
           />
         </div>
-        <p role="alert" className="min-h-[22px] pt-2 text-[13px] font-medium text-neg">
-          {error}
-        </p>
+        {suggestion && !error ? (
+          <p className="min-h-[22px] pt-2 text-[13px] font-medium text-muted">
+            Did you mean{" "}
+            <button type="button" onClick={() => setEmail(suggestion)} className="font-semibold text-ink underline underline-offset-2">
+              {suggestion}
+            </button>
+            ?
+          </p>
+        ) : (
+          <p role="alert" className="min-h-[22px] pt-2 text-[13px] font-medium text-neg">
+            {error}
+          </p>
+        )}
         <Cta type="submit" disabled={!valid} busy={busy}>
           Send code
         </Cta>
