@@ -1,0 +1,27 @@
+{
+  "name": "@lets-split/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Let's Split REST API (/v1) on a Supabase Edge Function. Hono + zod-openapi.",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p .",
+    "openapi": "node --experimental-strip-types scripts/print-openapi.ts",
+    "dev": "deno run -A --watch=src/,../../../packages/core/src/ --config deno.json --env-file=../.env.local dev.ts",
+    "check": "deno check --config deno.json index.ts"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "1.6.3",
+    "@lets-split/core": "workspace:*",
+    "@supabase/supabase-js": "2.119.2",
+    "hono": "4.13.19",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.12",
+    "deno": "2.9.6"
+  }
+}

@@ -1,0 +1,647 @@
+<title>Let's Split Directions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700&family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&family=Unbounded:wght@400..700&family=Manrope:wght@400..800&display=swap">
+<style>
+/* Layout: one column of sections; the three directions sit side by side as live phones and stack on narrow screens. */
+:root{
+  --bg:#ECEEF2; --surface:#FFFFFF; --ink:#15161A; --muted:#5A5F6E; --line:#D7DAE2; --accent:#2E4BFF;
+  --f-display:"Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+  --f-body:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"Geist Mono", ui-monospace, "SF Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F1013; --surface:#181A1F; --ink:#ECEDF1; --muted:#9BA0AD; --line:#2A2D35; --accent:#8C9DFF; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0F1013; --surface:#181A1F; --ink:#ECEDF1; --muted:#9BA0AD; --line:#2A2D35; --accent:#8C9DFF; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:36px 72px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:60px}
+h1,h2,h3{font-family:var(--f-display);letter-spacing:-0.03em;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:clamp(34px,6vw,60px);font-weight:750}
+h2{font-size:clamp(24px,3.4vw,34px);font-weight:700}
+h3{font-size:22px;font-weight:700}
+p{margin:0}
+.eyebrow{font-size:12px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lede{max-width:64ch;color:var(--muted);font-size:16.5px}
+header{display:flex;flex-direction:column;gap:14px}
+section{display:flex;flex-direction:column;gap:20px}
+
+/* references */
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.ref{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.ref h4{margin:0;font-size:15px;font-weight:650}
+.ref .tag{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.ref ul{margin:0;padding-left:18px;color:var(--muted);font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+
+/* directions */
+.dirs{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:24px;align-items:start}
+.dir{display:flex;flex-direction:column;gap:16px;min-width:0}
+.dir-head{display:flex;flex-direction:column;gap:6px}
+.dir-head .feel{color:var(--muted);font-size:14.5px}
+.stage{border-radius:30px;padding:28px 10px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.stage.s1{background:#DCE2F6}.stage.s2{background:#1A1B20}.stage.s3{background:#D9E3D2}
+.hint{font-size:12.5px;font-weight:600;text-align:center;max-width:280px}
+.s1 .hint{color:#2B3256}.s2 .hint{color:#B9BEC9}.s3 .hint{color:#2B3A2F}
+.spec{display:flex;flex-direction:column;gap:12px;font-size:13.5px}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.sw{width:34px;height:34px;border-radius:10px;border:1px solid var(--line)}
+.spec dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px}
+.spec dt{color:var(--muted);font-weight:600}
+.spec dd{margin:0;min-width:0}
+.spec ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.from{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+
+/* phone shell */
+.phone{width:300px;max-width:100%;height:624px;border-radius:50px;padding:9px;background:#0A0A0B;position:relative;
+  box-shadow:0 30px 60px -20px rgba(10,12,30,.45),0 0 0 1.5px #2A2B2F inset}
+.screen{width:100%;height:100%;border-radius:41px;overflow:hidden;position:relative;-webkit-user-select:none;user-select:none}
+.island{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:84px;height:25px;background:#000;border-radius:20px;z-index:30}
+.sb{height:44px;display:flex;justify-content:space-between;align-items:center;padding:4px 26px 0;font:600 13px/1 var(--f-body);position:relative;z-index:5}
+.sb .ic{display:flex;gap:5px;align-items:center}
+.sb .bat{width:22px;height:11px;border-radius:3px;border:1.5px solid currentColor;position:relative;opacity:.9}
+.sb .bat::after{content:"";position:absolute;inset:1.5px;right:4px;background:currentColor;border-radius:1px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- Direction 1: Ticket & Ring ---------- */
+.d1{background:#EEF1FB;color:#111216;font-family:var(--f-body);display:flex;flex-direction:column;height:100%}
+.d1-top{display:flex;align-items:center;justify-content:space-between;padding:2px 18px 10px;font-weight:650;font-size:15px}
+.d1-top svg{display:block}
+.ticket{margin:0 14px;background:#fff;border-radius:26px;position:relative;display:flex;flex-direction:column}
+.ticket.thud{animation:thud .42s cubic-bezier(.3,1.6,.5,1)}
+@keyframes thud{0%{transform:scale(1)}35%{transform:scale(.975) translateY(2px)}100%{transform:scale(1)}}
+.ring-wrap{position:relative;height:212px;display:grid;place-items:center}
+.ring-wrap svg{width:200px;height:200px;overflow:visible}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.amt{font-family:"Bricolage Grotesque",var(--f-body);font-weight:750;letter-spacing:-.045em;display:flex;align-items:baseline;line-height:1}
+.amt .cur{font-size:15px;margin-right:2px;font-weight:650}.amt .int{font-size:34px}.amt .dec{font-size:15px;font-weight:650}
+.d1 .sub{font-size:11.5px;color:#6A6F82;margin-top:7px}
+.stamp{position:absolute;top:44%;left:50%;transform:translate(-50%,-50%) rotate(-13deg) scale(2.2);opacity:0;border:2.5px solid #3D5BFF;color:#3D5BFF;
+  font:800 13px/1 "Bricolage Grotesque",sans-serif;letter-spacing:.16em;padding:8px 12px;border-radius:9px;background:rgba(255,255,255,.9);pointer-events:none}
+.stamp.show{animation:stamp .55s cubic-bezier(.2,1.5,.4,1) forwards}
+.stamp.hide{animation:stampout .35s ease forwards}
+@keyframes stamp{from{opacity:0;transform:translate(-50%,-50%) rotate(-24deg) scale(2.2)}to{opacity:1;transform:translate(-50%,-50%) rotate(-13deg) scale(1)}}
+@keyframes stampout{from{opacity:1;transform:translate(-50%,-50%) rotate(-13deg) scale(1)}to{opacity:0;transform:translate(-50%,-50%) rotate(-13deg) scale(.8)}}
+.perf{position:relative;height:18px;background:radial-gradient(circle at 0 50%,#EEF1FB 9px,transparent 9.5px),radial-gradient(circle at 100% 50%,#EEF1FB 9px,transparent 9.5px)}
+.perf::before{content:"";position:absolute;left:18px;right:18px;top:50%;border-top:2px dashed #D9DEF0}
+.rows{padding:2px 10px 10px;display:flex;flex-direction:column;gap:2px}
+.row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:16px;cursor:pointer;border:0;background:transparent;text-align:left;width:100%;transition:background .2s}
+.row:hover{background:#F3F5FC}
+.row.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.row .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 12px var(--f-body);transition:transform .35s cubic-bezier(.3,1.6,.5,1),opacity .25s}
+.row .nm{flex:1;font-weight:650;font-size:13.5px;transition:opacity .25s}
+.row .am{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:15px;letter-spacing:-.02em;transition:opacity .25s;font-variant-numeric:tabular-nums}
+.row .am small{font-size:10px;opacity:.55}
+.row .ck{width:20px;height:20px;border-radius:50%;border:2px solid #D3D8EA;display:grid;place-items:center;transition:background .2s,border-color .2s,transform .35s cubic-bezier(.3,1.8,.5,1)}
+.row .ck svg{opacity:0;transition:opacity .2s}
+.row.on .ck{background:#111216;border-color:#111216;transform:scale(1.08)}
+.row.on .ck svg{opacity:1}
+.row:not(.on) .av{opacity:.35;transform:scale(.85)}
+.row:not(.on) .nm,.row:not(.on) .am{opacity:.4}
+.pill-cta{margin:12px 14px 0;height:50px;border-radius:999px;background:#111216;color:#fff;border:0;font-weight:650;font-size:14.5px;cursor:pointer;transition:transform .2s}
+.pill-cta:active{transform:scale(.97)}
+
+/* ---------- Direction 2: Midnight Sheet ---------- */
+.d2{background:#0E0F12;color:#F2F3F5;font-family:"Geist",var(--f-body);height:100%;position:relative}
+.d2-head{display:flex;justify-content:space-between;align-items:center;padding:0 20px}
+.me{width:32px;height:32px;border-radius:50%;background:#F4D23C;color:#111;display:grid;place-items:center;font-weight:700;font-size:13px}
+.icon-btn{width:32px;height:32px;border-radius:50%;background:#1C1E23;display:grid;place-items:center;border:0;color:#C9CDD6}
+.d2-bal{padding:12px 20px 0}
+.d2 .lbl{font-size:12px;color:#9096A3}
+.big{font-weight:600;font-size:38px;letter-spacing:-.045em;display:flex;align-items:baseline;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums}
+.big .cur{font-size:22px;margin-right:2px;color:#C9CDD6}
+.big .dec{font-family:"Geist Mono",monospace;font-size:17px;color:#6E7480;font-weight:500;letter-spacing:0}
+.big.neg .int{color:#FF9C7A}
+.d2-actions{display:flex;gap:8px;margin-top:12px}
+.chip{height:30px;padding:0 14px;border-radius:999px;font-size:12.5px;font-weight:600;border:0;cursor:pointer}
+.chip.w{background:#F2F3F5;color:#0E0F12}.chip.d{background:#1F2126;color:#E6E8EC}
+.tstack{position:absolute;left:20px;right:44px;top:196px;height:62px;cursor:pointer}
+.tcard{position:absolute;inset:0;border-radius:18px;padding:0 14px;color:#121316;display:flex;align-items:center;justify-content:space-between;transform-origin:right center;
+  transition:transform .55s cubic-bezier(.34,1.56,.64,1),filter .4s,opacity .3s}
+.tcard b{font-size:14px;font-weight:700;display:block;letter-spacing:-.01em}
+.tcard span{font-size:11px;opacity:.7}
+.tcard .sp{text-align:right;font-family:"Geist Mono",monospace;font-size:12px;font-weight:600}
+.tcard.fly{animation:fly .28s cubic-bezier(.5,0,.9,.5) forwards}
+@keyframes fly{to{transform:translate(-40px,-16px) rotate(-7deg) scale(.96);opacity:0}}
+.sheet{position:absolute;left:0;right:0;top:0;height:100%;background:#F6F6F7;color:#121316;border-radius:28px 28px 0 0;z-index:10;will-change:transform;box-shadow:0 -10px 30px rgba(0,0,0,.35)}
+.grab{padding:9px 0 5px;display:grid;place-items:center;cursor:grab;touch-action:none}
+.grab i{width:38px;height:5px;border-radius:3px;background:#CDD0D6}
+.sh-head{display:flex;justify-content:space-between;align-items:flex-end;padding:0 18px 10px;touch-action:none;cursor:grab}
+.sh-head .t{font-size:12.5px;color:#6C717C;font-weight:500}
+.sh-head .a{font-size:22px;font-weight:650;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.sh-head .a small{font-family:"Geist Mono",monospace;font-size:12px;color:#8A8F99;letter-spacing:0}
+.eq{height:28px;padding:0 12px;border-radius:999px;border:1px solid #DADCE1;background:#fff;font-size:11.5px;font-weight:600;cursor:pointer}
+.sliders{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:2px 16px 0}
+.sl{display:flex;flex-direction:column;align-items:center;gap:6px}
+.track{width:52px;height:128px;border-radius:26px;background:#E5E6EA;position:relative;overflow:hidden;touch-action:none;cursor:ns-resize}
+.fill{position:absolute;left:0;right:0;bottom:0;border-radius:26px}
+.fa{position:absolute;top:4px;left:50%;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#fff;color:#121316;display:grid;place-items:center;font-weight:700;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.sl .v{font-weight:650;font-size:13px;font-variant-numeric:tabular-nums}
+.sl .n{font-size:10.5px;color:#7A7F8B;margin-top:-5px}
+.sh-list{padding:18px 18px 0;display:flex;flex-direction:column;gap:2px}
+.sh-list .h{font-size:11px;font-weight:650;letter-spacing:.1em;text-transform:uppercase;color:#8A8F99;padding-bottom:6px}
+.li{display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid #E7E8EB}
+.li .sq{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:12px;color:#121316}
+.li .tx{flex:1;min-width:0}.li .tx b{display:block;font-size:13px;font-weight:600}.li .tx span{font-size:11px;color:#7A7F8B}
+.li .m{font-family:"Geist Mono",monospace;font-size:12.5px;font-weight:600}
+.tabbar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#141518;border-radius:999px;padding:5px;display:flex;gap:4px;z-index:20;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.tab{width:46px;height:40px;border-radius:999px;display:grid;place-items:center;color:#8E94A0;position:relative;z-index:1;border:0;background:transparent;cursor:pointer;transition:color .3s}
+.tab.on{color:#111}
+.blob{position:absolute;top:5px;left:5px;width:46px;height:40px;border-radius:999px;background:#F2F3F5;transition:transform .5s cubic-bezier(.34,1.56,.64,1)}
+
+/* ---------- Direction 3: Bloom ---------- */
+.d3{background:#EEF2E9;color:#18211B;font-family:"Manrope",var(--f-body);height:100%;display:flex;flex-direction:column}
+.d3-head{padding:4px 22px 0}
+.d3 .ey{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#5E6B61}
+.big3{font-family:"Unbounded",var(--f-display);font-weight:600;font-size:30px;letter-spacing:-.04em;display:flex;align-items:baseline;line-height:1.15;margin-top:4px}
+.big3 .cur{font-size:17px;margin-right:3px}.big3 .dec{font-size:14px;color:#5E6B61}
+.meta3{font-size:12px;color:#5E6B61;margin-top:2px;font-weight:500}
+.bloom{position:relative;display:grid;place-items:center;height:250px;margin-top:4px}
+.bloom svg{width:250px;height:250px;overflow:visible}
+.bloom path{cursor:pointer;transition:opacity .3s}
+.core{position:absolute;width:98px;height:98px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 8px 22px rgba(24,33,27,.14);text-align:center;pointer-events:none;gap:1px}
+.core b{font-family:"Unbounded",sans-serif;font-size:14px;font-weight:600;letter-spacing:-.03em}
+.core span{font-size:10px;color:#5E6B61;font-weight:600}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;padding:4px 16px 0}
+.lg{display:flex;align-items:center;gap:7px;font-size:12px;padding:6px 8px;border-radius:12px;cursor:pointer;border:0;background:transparent;text-align:left;font-weight:600;color:#18211B;transition:background .25s}
+.lg.sel{background:#fff}
+.lg .dot{width:10px;height:10px;border-radius:4px;flex:none}
+.lg b{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+.replay{margin:10px auto 0;display:block;border:0;background:#18211B;color:#EEF2E9;border-radius:999px;height:36px;padding:0 18px;font-weight:700;font-size:12.5px;cursor:pointer}
+
+/* blend + notes */
+.blend{background:var(--surface);border:1px solid var(--line);border-radius:26px;padding:clamp(20px,4vw,34px);display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.blend .col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.blend ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:14.5px}
+.blend b{font-weight:650}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.note{border-left:3px solid var(--accent);padding:2px 0 2px 14px;display:flex;flex-direction:column;gap:6px;font-size:14px;min-width:0}
+.note h4{margin:0;font-size:15px}
+.note p{color:var(--muted)}
+.src{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.src ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.src a{color:var(--accent)}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Let's Split · Step 1 of design</span>
+    <h1>Three ways Let's Split could look</h1>
+    <p class="lede">Built from your four references and current mobile design trends. Each phone below is live, so tap and drag them. Pick one, or take my recommended blend at the bottom. Once you choose, the flows and screens go into Figma.</p>
+  </header>
+
+  <section>
+    <h2>What I took from your references</h2>
+    <div class="refs">
+      <div class="ref"><span class="tag">Reference 1 · Split request</span><h4>Light, ticket and ring</h4>
+        <ul><li>Big amount with small decimals: ₹<b>30</b>.00</li><li>Donut ring split by person, with avatars on the arc</li><li>Ticket card with notches and a perforated line</li><li>Black pill button</li></ul></div>
+      <div class="ref"><span class="tag">Reference 2 · trackit</span><h4>Soft, radial petals</h4>
+        <ul><li>Category spend as a flower of petals</li><li>One huge, tightly set number up top</li><li>Lots of breathing room</li></ul></div>
+      <div class="ref"><span class="tag">Reference 3 · Split bill, dark</span><h4>Tactile pill sliders</h4>
+        <ul><li>One vertical pill per person showing their share</li><li>Avatar sitting on top of the fill</li><li>Deep, warm dark surfaces</li></ul></div>
+      <div class="ref"><span class="tag">Reference 4 · Pinterest wallet</span><h4>Dark top, white sheet</h4>
+        <ul><li>White sheet sliding over a dark header</li><li>Colored cards stacked with edges peeking out</li><li>Floating pill tab bar</li></ul></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The three directions</h2>
+    <div class="dirs">
+
+      <!-- Direction 1 -->
+      <article class="dir">
+        <div class="dir-head"><span class="eyebrow">Direction A</span><h3>Ticket &amp; Ring</h3>
+          <p class="feel">Bright and paper-like. Every split looks like a ticket, and the ring shows who owes what at a glance.</p></div>
+        <div class="stage s1">
+          <div class="phone"><div class="island"></div><div class="screen">
+            <div class="d1">
+              <div class="sb"><span>9:41</span><span class="ic"><svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.3" y="5" width="3" height="6" rx="1"/><rect x="8.6" y="2.5" width="3" height="8.5" rx="1"/><rect x="13" y="0" width="3" height="11" rx="1"/></svg><span class="bat"></span></span></div>
+              <div class="d1-top">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+                <span>Dinner at Thalassa</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+              </div>
+              <div class="ticket" id="d1ticket">
+                <div class="ring-wrap">
+                  <svg id="ring" viewBox="0 0 220 220" aria-label="Split ring"></svg>
+                  <div class="ring-center"><div class="amt"><span class="cur">₹</span><span class="int">3,600</span><span class="dec">.00</span></div><div class="sub" id="d1sub">Split 4 ways</div></div>
+                  <div class="stamp" id="stamp">REQUESTED</div>
+                </div>
+                <div class="perf"></div>
+                <div class="rows" id="d1rows"></div>
+              </div>
+              <button class="pill-cta" id="d1cta">Request split</button>
+            </div>
+          </div></div>
+          <p class="hint">Tap people to add or remove them. Then tap the black button.</p>
+        </div>
+        <div class="spec">
+          <div class="swatches"><span class="sw" style="background:#EEF1FB"></span><span class="sw" style="background:#111216"></span><span class="sw" style="background:#3D5BFF"></span><span class="sw" style="background:#F4E22C"></span><span class="sw" style="background:#A9B8FF"></span></div>
+          <dl>
+            <dt>Type</dt><dd>Bricolage Grotesque for amounts, Instrument Sans for everything else</dd>
+            <dt>Signature motion</dt><dd><ul><li>Ring segments spring to new sizes as people join or leave</li><li>Avatars ride along the arc</li><li>A “Requested” stamp thuds onto the ticket</li><li>On settle-up, the ticket stub tears off</li></ul></dd>
+            <dt>Best for</dt><dd>Add expense, split editor, receipts</dd>
+          </dl>
+          <span class="from">From references 1 and 2</span>
+        </div>
+      </article>
+
+      <!-- Direction 2 -->
+      <article class="dir">
+        <div class="dir-head"><span class="eyebrow">Direction B</span><h3>Midnight Sheet</h3>
+          <p class="feel">A premium fintech feel. Dark chrome for balances, and a white sheet you pull up for details. Each trip gets its own color.</p></div>
+        <div class="stage s2">
+          <div class="phone"><div class="island"></div><div class="screen">
+            <div class="d2">
+              <div class="sb" style="color:#F2F3F5"><span>9:41</span><span class="ic"><svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.3" y="5" width="3" height="6" rx="1"/><rect x="8.6" y="2.5" width="3" height="8.5" rx="1"/><rect x="13" y="0" width="3" height="11" rx="1"/></svg><span class="bat"></span></span></div>
+              <div class="d2-head"><span class="me">N</span><button class="icon-btn" aria-label="Notifications"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button></div>
+              <div class="d2-bal">
+                <div class="lbl" id="d2lbl">You're owed in Goa '26</div>
+                <div class="big" id="d2big"><span class="cur">₹</span><span class="int">4,280</span><span class="dec">.50</span></div>
+                <div class="d2-actions"><button class="chip w">Settle up</button><button class="chip d">Remind</button><button class="chip d">Share</button></div>
+              </div>
+              <div class="tstack" id="tstack" role="button" tabindex="0" aria-label="Switch trip"></div>
+              <div class="sheet" id="sheet">
+                <div class="grab" id="grab"><i></i></div>
+                <div class="sh-head" id="shhead">
+                  <div><div class="t" id="exname">Cab to Baga</div><div class="a" id="extotal">₹2,400<small>.00</small></div></div>
+                  <button class="eq" id="eqbtn">Split equally</button>
+                </div>
+                <div class="sliders" id="sliders"></div>
+                <div class="sh-list" id="shlist"></div>
+              </div>
+              <div class="tabbar" id="tabbar">
+                <span class="blob" id="blob"></span>
+                <button class="tab on" aria-label="Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button>
+                <button class="tab" aria-label="Groups"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M17 14c2.3 0 4 1.4 4.6 4"/></svg></button>
+                <button class="tab" aria-label="Add expense"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <button class="tab" aria-label="Stats"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg></button>
+              </div>
+            </div>
+          </div></div>
+          <p class="hint">Drag the pills, pull the white sheet up, tap the trip cards, try the tab bar.</p>
+        </div>
+        <div class="spec">
+          <div class="swatches"><span class="sw" style="background:#0E0F12"></span><span class="sw" style="background:#F6F6F7"></span><span class="sw" style="background:#F4D23C"></span><span class="sw" style="background:#3FD0B6"></span><span class="sw" style="background:#5C8DFF"></span><span class="sw" style="background:#FF8A5B"></span></div>
+          <dl>
+            <dt>Type</dt><dd>Geist for UI and numbers, Geist Mono for decimals and receipts</dd>
+            <dt>Signature motion</dt><dd><ul><li>The sheet follows your finger and springs with your swipe speed</li><li>Dragging one pill rebalances everyone else live</li><li>Trip cards flick to the back of the stack</li><li>The balance counts up</li></ul></dd>
+            <dt>Best for</dt><dd>App shell, home, group screen</dd>
+          </dl>
+          <span class="from">From references 3 and 4</span>
+        </div>
+      </article>
+
+      <!-- Direction 3 -->
+      <article class="dir">
+        <div class="dir-head"><span class="eyebrow">Direction C</span><h3>Bloom</h3>
+          <p class="feel">Soft and playful. Spending grows like a flower, which makes trip stats and Trip Wrapped fun to show off.</p></div>
+        <div class="stage s3">
+          <div class="phone"><div class="island"></div><div class="screen">
+            <div class="d3">
+              <div class="sb"><span>9:41</span><span class="ic"><svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.3" y="5" width="3" height="6" rx="1"/><rect x="8.6" y="2.5" width="3" height="8.5" rx="1"/><rect x="13" y="0" width="3" height="11" rx="1"/></svg><span class="bat"></span></span></div>
+              <div class="d3-head">
+                <div class="ey">Manali with cousins · Trip stats</div>
+                <div class="big3"><span class="cur">₹</span><span>48,960</span><span class="dec">.00</span></div>
+                <div class="meta3">9 days · 5 people · ₹5,440 a day</div>
+              </div>
+              <div class="bloom" id="bloomwrap">
+                <svg id="bloom" viewBox="0 0 250 250" aria-label="Spending by category"></svg>
+                <div class="core" id="core"><b>7 categories</b><span>Tap a petal</span></div>
+              </div>
+              <div class="legend" id="legend"></div>
+              <button class="replay" id="replay">Replay bloom</button>
+            </div>
+          </div></div>
+          <p class="hint">Tap a petal or a category. Tap “Replay bloom” to see it grow again.</p>
+        </div>
+        <div class="spec">
+          <div class="swatches"><span class="sw" style="background:#EEF2E9"></span><span class="sw" style="background:#18211B"></span><span class="sw" style="background:#2F6B4F"></span><span class="sw" style="background:#F28C38"></span><span class="sw" style="background:#3A7BD5"></span><span class="sw" style="background:#E2557A"></span></div>
+          <dl>
+            <dt>Type</dt><dd>Unbounded for amounts and titles, Manrope for everything else</dd>
+            <dt>Signature motion</dt><dd><ul><li>Petals bloom one after another with a bouncy spring</li><li>Picking a petal fades the others</li><li>Trip Wrapped plays as a story of blooms</li></ul></dd>
+            <dt>Best for</dt><dd>Stats, Trip Wrapped, end-of-trip summary</dd>
+          </dl>
+          <span class="from">From reference 2</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>My recommendation: blend them, with one look throughout</h2>
+    <div class="blend">
+      <div class="col"><span class="eyebrow">Which direction goes where</span>
+        <ul>
+          <li><b>Shell and home from Midnight Sheet:</b> a dark balance header, trip cards stacked per trip, a white sheet for expenses and a floating tab bar.</li>
+          <li><b>Splitting from Ticket &amp; Ring:</b> the ring with avatar pins, receipts as tickets, the “Requested” stamp and the tear-off on settle-up.</li>
+          <li><b>Uneven splits use the pill sliders.</b> Drag one person's pill and everyone else rebalances.</li>
+          <li><b>Stats and Trip Wrapped from Bloom:</b> the petal chart as the hero of the trip summary.</li>
+        </ul></div>
+      <div class="col"><span class="eyebrow">Shared across every screen</span>
+        <ul>
+          <li><b>One type system:</b> Bricolage Grotesque for big amounts, Geist for interface text, Geist Mono for decimals and receipt lines. Amounts always show smaller decimals, like ₹<b>3,600</b>.00.</li>
+          <li><b>Two springs:</b> a snappy one for the interface and a bouncy one for celebrations. Every animation uses one of them, so the app feels like one system.</li>
+          <li><b>Color per trip:</b> each trip has an accent (Goa yellow, Manali teal, Jaipur blue) that colors its card, ring and charts.</li>
+          <li><b>Respects Reduce Motion</b> on iPhone.</li>
+        </ul></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Notes from the trend research</h2>
+    <div class="notes">
+      <div class="note"><h4>I avoided the lavender everywhere</h4><p>Your references 1 and 2 lean soft purple. Purple-on-white is the most common look of AI-generated apps right now, so I kept the cool, airy tint and used cobalt and sunshine yellow as accents.</p></div>
+      <div class="note"><h4>The dark mode isn't one red accent on black</h4><p>That pairing is another overused default. Reference 4's stack of colored cards gives each trip its own identity instead.</p></div>
+      <div class="note"><h4>Sheets and bottom controls are the 2026 norm</h4><p>Primary actions sit near the thumb, and secondary content lives in sheets. Blur is used only where one layer sits over another, with a solid fallback.</p></div>
+      <div class="note"><h4>Motion should mean something, and be easy to stop</h4><p>Celebrate settle-ups and show cause and effect when splitting. Keep lists and forms calm, and honor iPhone's Reduce Motion setting.</p></div>
+      <div class="note"><h4>Fonts with personality</h4><p>Designers are moving away from Inter and Helvetica. Expressive faces like Bricolage Grotesque are used for display, with clean UI faces for running text. Every pick here is a free Google Font.</p></div>
+      <div class="note"><h4>An iPhone “Liquid Glass” look is only approximate on the web</h4><p>There is no official CSS for it. Background blur plus saturation gets close, so I'd use it sparingly on the tab bar and sheets.</p></div>
+    </div>
+    <div class="src">Sources
+      <ul>
+        <li><a href="https://muz.li/blog/whats-changing-in-mobile-app-design-ui-patterns-that-matter-in-2026/" target="_blank" rel="noopener">Muzli: mobile UI patterns that matter in 2026</a></li>
+        <li><a href="https://www.creativeboom.com/the-edit/15-typefaces-designers-cant-stop-using-or-admiring-in-2026/" target="_blank" rel="noopener">Creative Boom: 15 typefaces designers love in 2026</a></li>
+        <li><a href="https://fontalternatives.com/blog/neo-grotesk-fatigue-2026/" target="_blank" rel="noopener">Font Alternatives: neo-grotesk fatigue</a></li>
+        <li><a href="https://blog.tubikstudio.com/?p=17271" target="_blank" rel="noopener">Tubik: UI trends 2026 (motion users can stop)</a></li>
+        <li><a href="https://progressier.com/liquid-glass-pwa-css" target="_blank" rel="noopener">Progressier: Liquid Glass CSS for PWAs</a></li>
+        <li><a href="https://motion.dev/changelog" target="_blank" rel="noopener">Motion changelog</a></li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // ---- tiny spring engine ----
+  class Spring {
+    constructor(v, o = {}) { this.x = v; this.v = 0; this.t = v; this.k = o.k ?? 260; this.c = o.c ?? 24; this.eps = o.eps ?? 1e-3; }
+    step(dt) {
+      const f = -this.k * (this.x - this.t) - this.c * this.v;
+      this.v += f * dt; this.x += this.v * dt;
+      if (Math.abs(this.v) < this.eps && Math.abs(this.x - this.t) < this.eps) { this.x = this.t; this.v = 0; return false; }
+      return true;
+    }
+  }
+  function loop(springs, render) {
+    let raf = null, last = 0;
+    const tick = (now) => {
+      const dt = Math.min(0.032, (now - last) / 1000); last = now;
+      let active = false;
+      for (let i = 0; i < 2; i++) for (const s of springs) if (s.step(dt / 2)) active = true;
+      render();
+      raf = active ? requestAnimationFrame(tick) : null;
+    };
+    return () => {
+      if (reduce) { springs.forEach(s => { s.x = s.t; s.v = 0; }); render(); return; }
+      if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); }
+    };
+  }
+  const inr = (p) => {
+    const neg = p < 0; p = Math.abs(Math.round(p));
+    return { int: Math.floor(p / 100).toLocaleString('en-IN'), dec: '.' + String(p % 100).padStart(2, '0'), neg };
+  };
+  const splitEven = (total, n) => { const b = Math.floor(total / n), r = total - b * n; return Array.from({ length: n }, (_, i) => b + (i < r ? 1 : 0)); };
+  const polar = (cx, cy, r, deg) => { const a = (deg - 90) * Math.PI / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
+  const arc = (cx, cy, r, a0, a1) => { const [x0, y0] = polar(cx, cy, r, a0), [x1, y1] = polar(cx, cy, r, a1); return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; };
+
+  // ================= Direction A: Ticket & Ring =================
+  {
+    const people = [
+      { n: 'You', i: 'N', c: '#141518', t: '#fff' },
+      { n: 'Diya', i: 'D', c: '#3D5BFF', t: '#fff' },
+      { n: 'Kabir', i: 'K', c: '#F4E22C', t: '#141518' },
+      { n: 'Meera', i: 'M', c: '#A9B8FF', t: '#141518' },
+    ];
+    const TOTAL = 360000;
+    const on = people.map(() => true);
+    const shares = people.map(() => new Spring(0.25, { k: 210, c: 19, eps: 1e-4 }));
+    const amts = people.map(() => new Spring(90000, { k: 200, c: 26, eps: 0.5 }));
+    const svg = document.getElementById('ring');
+    const track = document.createElementNS(NS, 'circle');
+    Object.entries({ cx: 110, cy: 110, r: 84, fill: 'none', stroke: '#F1F3FA', 'stroke-width': 24 }).forEach(([k, v]) => track.setAttribute(k, v));
+    svg.appendChild(track);
+    const segs = people.map(p => { const el = document.createElementNS(NS, 'path'); el.setAttribute('fill', 'none'); el.setAttribute('stroke', p.c); el.setAttribute('stroke-width', 24); el.setAttribute('stroke-linecap', 'round'); svg.appendChild(el); return el; });
+    const pins = people.map(p => {
+      const g = document.createElementNS(NS, 'g');
+      const c = document.createElementNS(NS, 'circle'); c.setAttribute('r', 15); c.setAttribute('fill', p.c); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', 3.5);
+      const t = document.createElementNS(NS, 'text'); t.textContent = p.i; t.setAttribute('text-anchor', 'middle'); t.setAttribute('dy', '4.2'); t.setAttribute('fill', p.t); t.setAttribute('font-size', '12'); t.setAttribute('font-weight', '700'); t.setAttribute('font-family', 'Instrument Sans, sans-serif');
+      g.append(c, t); svg.appendChild(g); return g;
+    });
+    const rowsEl = document.getElementById('d1rows');
+    const rows = people.map((p, i) => {
+      const b = document.createElement('button'); b.className = 'row on'; b.type = 'button';
+      b.innerHTML = `<span class="av" style="background:${p.c};color:${p.t}">${p.i}</span><span class="nm">${p.n}</span><span class="am"></span><span class="ck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>`;
+      b.addEventListener('click', () => toggle(i));
+      rowsEl.appendChild(b); return b;
+    });
+    const render = () => {
+      let acc = 0;
+      people.forEach((p, i) => {
+        const s = Math.max(0, Math.min(1, shares[i].x));
+        const sweep = s * 360, gw = Math.max(0, Math.min(1, s * 8)), gap = 28 * gw;
+        const a0 = acc + gap / 2, a1 = acc + sweep - gap / 2;
+        segs[i].setAttribute('d', a1 - a0 > 0.3 && s > 0.003 ? arc(110, 110, 84, a0, a1) : '');
+        const [x, y] = polar(110, 110, 84, Math.max(a0, a1));
+        pins[i].setAttribute('transform', `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${gw.toFixed(3)})`);
+        pins[i].style.opacity = gw;
+        acc += sweep;
+        const f = inr(amts[i].x);
+        rows[i].querySelector('.am').innerHTML = `₹${f.int}<small>${f.dec}</small>`;
+      });
+    };
+    const kick = loop([...shares, ...amts], render);
+    const sub = document.getElementById('d1sub'), cta = document.getElementById('d1cta');
+    function apply() {
+      const idx = on.map((v, i) => v ? i : -1).filter(i => i >= 0);
+      const parts = splitEven(TOTAL, idx.length);
+      people.forEach((_, i) => { const k = idx.indexOf(i); shares[i].t = k >= 0 ? 1 / idx.length : 0; amts[i].t = k >= 0 ? parts[k] : 0; });
+      sub.textContent = idx.length === 1 ? 'Just one person' : `Split ${idx.length} ways`;
+      const others = idx.filter(i => i !== 0);
+      const owed = others.reduce((s, i) => s + parts[idx.indexOf(i)], 0);
+      cta.textContent = others.length ? `Request ₹${inr(owed).int} from ${others.length}` : 'Nothing to request';
+      kick();
+    }
+    function toggle(i) {
+      if (on[i] && on.filter(Boolean).length === 1) { rows[i].classList.remove('shake'); void rows[i].offsetWidth; rows[i].classList.add('shake'); return; }
+      on[i] = !on[i]; rows[i].classList.toggle('on', on[i]); apply();
+    }
+    const stamp = document.getElementById('stamp'), ticket = document.getElementById('d1ticket');
+    let stampTimer;
+    cta.addEventListener('click', () => {
+      clearTimeout(stampTimer);
+      stamp.className = 'stamp'; ticket.classList.remove('thud'); void stamp.offsetWidth;
+      stamp.classList.add('show');
+      setTimeout(() => ticket.classList.add('thud'), 260);
+      stampTimer = setTimeout(() => { stamp.className = 'stamp hide'; ticket.classList.remove('thud'); }, 1700);
+    });
+    apply(); render();
+  }
+
+  // ================= Direction B: Midnight Sheet =================
+  {
+    const ppl = [{ i: 'N', n: 'You', c: '#F4D23C' }, { i: 'D', n: 'Diya', c: '#3FD0B6' }, { i: 'K', n: 'Kabir', c: '#5C8DFF' }, { i: 'M', n: 'Meera', c: '#FF8A5B' }];
+    const trips = [
+      { name: "Goa '26", meta: '6 people · 4 days', spent: '₹38,420', owed: 428050, color: '#F4D23C', ex: 'Cab to Baga', exT: 240000,
+        list: [['Beach shack lunch', 'Paid by Diya', '₹3,180', '#3FD0B6'], ['Scooter rentals', 'Paid by you', '₹2,800', '#F4D23C'], ['Curlies sunset drinks', 'Paid by Kabir', '₹4,650', '#5C8DFF'], ['Villa, 3 nights', 'Paid by Meera', '₹21,000', '#FF8A5B']] },
+      { name: 'Manali cousins', meta: '5 people · 9 days', spent: '₹48,960', owed: 126000, color: '#3FD0B6', ex: 'Paragliding at Solang', exT: 1400000,
+        list: [['Volvo to Manali', 'Paid by you', '₹7,500', '#F4D23C'], ['Cafe 1947', 'Paid by Diya', '₹2,940', '#3FD0B6'], ['Hadimba temple cab', 'Paid by Kabir', '₹1,200', '#5C8DFF'], ['Homestay', 'Paid by Meera', '₹18,000', '#FF8A5B']] },
+      { name: 'Jaipur weekend', meta: '4 people · 2 days', spent: '₹14,300', owed: -82000, color: '#5C8DFF', ex: 'Chokhi Dhani dinner', exT: 396000,
+        list: [['Amber Fort tickets', 'Paid by Kabir', '₹1,600', '#5C8DFF'], ['Lassiwala', 'Paid by you', '₹320', '#F4D23C'], ['Haveli stay', 'Paid by Meera', '₹6,400', '#FF8A5B'], ['Johari Bazaar', 'Paid by Diya', '₹2,180', '#3FD0B6']] },
+    ];
+    let order = [0, 1, 2];
+    const stack = document.getElementById('tstack');
+    const cards = trips.map(t => { const d = document.createElement('div'); d.className = 'tcard'; d.style.background = t.color; d.innerHTML = `<div><b>${t.name}</b><span>${t.meta}</span></div><div class="sp">${t.spent}<br><span>spent</span></div>`; stack.appendChild(d); return d; });
+    const placeCards = () => order.forEach((ti, k) => { const el = cards[ti]; el.style.zIndex = 3 - k; el.style.transform = `translateX(${k * 13}px) scale(${1 - k * 0.07})`; el.style.filter = k ? `brightness(${1 - k * 0.14})` : 'none'; });
+    placeCards();
+
+    const owed = new Spring(trips[0].owed, { k: 120, c: 22, eps: 0.5 });
+    const big = document.getElementById('d2big'), lbl = document.getElementById('d2lbl');
+    const renderOwed = () => { const f = inr(owed.x); big.querySelector('.int').textContent = f.int; big.querySelector('.dec').textContent = f.dec; big.classList.toggle('neg', owed.x < 0); };
+    const kickOwed = loop([owed], renderOwed);
+
+    // sliders
+    let total = trips[0].exT;
+    const vals = ppl.map(() => new Spring(total / 4, { k: 260, c: 26, eps: 0.5 }));
+    const slEl = document.getElementById('sliders');
+    const TRACK_H = 128, MIN_H = 48;
+    const sliders = ppl.map((p, i) => {
+      const w = document.createElement('div'); w.className = 'sl';
+      w.innerHTML = `<div class="track"><div class="fill" style="background:${p.c}"><span class="fa">${p.i}</span></div></div><div class="v"></div><div class="n">${p.n}</div>`;
+      slEl.appendChild(w);
+      const tr = w.querySelector('.track');
+      const setFrom = (e) => { const r = tr.getBoundingClientRect(); const p01 = Math.max(0, Math.min(1, (r.bottom - e.clientY - MIN_H / 2) / (r.height - MIN_H))); rebalance(i, p01 * total); };
+      tr.addEventListener('pointerdown', e => { tr.setPointerCapture(e.pointerId); setFrom(e); });
+      tr.addEventListener('pointermove', e => { if (tr.hasPointerCapture(e.pointerId)) setFrom(e); });
+      return { fill: w.querySelector('.fill'), v: w.querySelector('.v') };
+    });
+    const renderSl = () => vals.forEach((s, i) => { const p01 = Math.max(0, Math.min(1, s.x / total)); sliders[i].fill.style.height = (MIN_H + p01 * (TRACK_H - MIN_H)).toFixed(1) + 'px'; sliders[i].v.textContent = '₹' + inr(s.x).int; });
+    const kickSl = loop(vals, renderSl);
+    function rebalance(k, nv) {
+      nv = Math.round(Math.max(0, Math.min(total, nv)));
+      const others = vals.map((_, i) => i).filter(i => i !== k);
+      const rest = total - nv;
+      let w = others.map(i => Math.max(0, vals[i].t)); let ws = w.reduce((a, b) => a + b, 0);
+      if (ws <= 0) { w = others.map(() => 1); ws = others.length; }
+      const raw = w.map(x => rest * x / ws), fl = raw.map(Math.floor);
+      let left = rest - fl.reduce((a, b) => a + b, 0);
+      raw.map((r, j) => [r - fl[j], j]).sort((a, b) => b[0] - a[0]).slice(0, left).forEach(([, j]) => fl[j]++);
+      vals[k].t = nv; vals[k].x = nv; vals[k].v = 0;
+      others.forEach((i, j) => vals[i].t = fl[j]);
+      kickSl();
+    }
+    const equal = () => { splitEven(total, 4).forEach((v, i) => vals[i].t = v); kickSl(); };
+    document.getElementById('eqbtn').addEventListener('click', equal);
+
+    const exname = document.getElementById('exname'), extotal = document.getElementById('extotal'), list = document.getElementById('shlist');
+    function showTrip(ti, animate) {
+      const t = trips[ti];
+      lbl.textContent = (t.owed < 0 ? "You owe in " : "You're owed in ") + t.name;
+      owed.t = t.owed; animate ? kickOwed() : renderOwed();
+      exname.textContent = t.ex; const f = inr(t.exT); extotal.innerHTML = `₹${f.int}<small>${f.dec}</small>`;
+      total = t.exT; equal();
+      list.innerHTML = `<div class="h">Recent in ${t.name}</div>` + t.list.map(([a, b, m, c]) => `<div class="li"><span class="sq" style="background:${c}">${a[0]}</span><div class="tx"><b>${a}</b><span>${b}</span></div><span class="m">${m}</span></div>`).join('');
+    }
+    showTrip(0, false);
+    let busy = false;
+    const cycle = () => {
+      if (busy) return; busy = true;
+      const front = cards[order[0]];
+      front.classList.add('fly');
+      setTimeout(() => {
+        front.classList.remove('fly');
+        front.style.transition = 'none'; front.style.opacity = 0;
+        order.push(order.shift()); placeCards(); void front.offsetWidth;
+        front.style.transition = ''; front.style.opacity = 1;
+        showTrip(order[0], true); busy = false;
+      }, reduce ? 0 : 280);
+    };
+    stack.addEventListener('click', cycle);
+    stack.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cycle(); } });
+
+    // draggable sheet
+    const sheet = document.getElementById('sheet');
+    const COL = 270, EXP = 64;
+    const y = new Spring(COL, { k: 320, c: 32, eps: 0.3 });
+    const renderY = () => sheet.style.transform = `translateY(${y.x.toFixed(1)}px)`;
+    const kickY = loop([y], renderY); renderY();
+    let drag = null;
+    const startDrag = e => { if (e.target.closest('button')) return; drag = { id: e.pointerId, y0: e.clientY, s0: y.x, lastY: e.clientY, lastT: performance.now(), vel: 0 }; e.currentTarget.setPointerCapture(e.pointerId); };
+    const moveDrag = e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      let ny = drag.s0 + (e.clientY - drag.y0);
+      if (ny < EXP) ny = EXP - (EXP - ny) * 0.3; if (ny > COL) ny = COL + (ny - COL) * 0.3;
+      const now = performance.now(); drag.vel = (e.clientY - drag.lastY) / Math.max(1, now - drag.lastT) * 1000; drag.lastY = e.clientY; drag.lastT = now;
+      y.x = y.t = ny; y.v = 0; renderY();
+    };
+    const endDrag = e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const v = drag.vel; drag = null;
+      const target = v < -350 ? EXP : v > 350 ? COL : (y.x < (COL + EXP) / 2 ? EXP : COL);
+      if (Math.abs(y.x - target) < 1 && Math.abs(v) < 50) { y.t = y.x === COL ? EXP : COL; } else { y.t = target; }
+      y.v = v; kickY();
+    };
+    ['grab', 'shhead'].forEach(id => { const el = document.getElementById(id); el.addEventListener('pointerdown', startDrag); el.addEventListener('pointermove', moveDrag); el.addEventListener('pointerup', endDrag); el.addEventListener('pointercancel', endDrag); });
+
+    // tab bar
+    const tabs = [...document.querySelectorAll('#tabbar .tab')], blob = document.getElementById('blob');
+    tabs.forEach((t, i) => t.addEventListener('click', () => { tabs.forEach(x => x.classList.remove('on')); t.classList.add('on'); blob.style.transform = `translateX(${i * 50}px)`; }));
+  }
+
+  // ================= Direction C: Bloom =================
+  {
+    const cats = [
+      { n: 'Stay', a: 1680000, c: '#2F6B4F' }, { n: 'Food', a: 1124000, c: '#F28C38' }, { n: 'Travel', a: 964000, c: '#3A7BD5' },
+      { n: 'Activities', a: 642000, c: '#E2557A' }, { n: 'Drinks', a: 286000, c: '#8E5BD9' }, { n: 'Shopping', a: 124000, c: '#D9B52B' }, { n: 'Misc', a: 76000, c: '#9AA59D' },
+    ];
+    const TOTAL = cats.reduce((s, c) => s + c.a, 0);
+    const amax = Math.max(...cats.map(c => c.a));
+    const svg = document.getElementById('bloom');
+    let sel = -1;
+    const sc = cats.map(() => new Spring(1, { k: 170, c: 13, eps: 1e-3 }));
+    const petals = cats.map((c, i) => {
+      const L = 62 + 56 * Math.sqrt(c.a / amax), w = 30 + 6 * Math.sqrt(c.a / amax);
+      const g = document.createElementNS(NS, 'g');
+      const p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', `M0 0 C${w} ${-L * 0.22} ${w * 1.05} ${-L} 0 ${-L} C${-w * 1.05} ${-L} ${-w} ${-L * 0.22} 0 0Z`);
+      p.setAttribute('fill', c.c); p.setAttribute('fill-opacity', '0.92');
+      p.addEventListener('click', () => pick(i));
+      g.appendChild(p); svg.appendChild(g);
+      return { g, p, ang: i * 360 / cats.length };
+    });
+    const render = () => petals.forEach((pt, i) => pt.g.setAttribute('transform', `translate(125 125) rotate(${pt.ang}) scale(${Math.max(0, sc[i].x).toFixed(4)})`));
+    const kick = loop(sc, render);
+    const legend = document.getElementById('legend'), core = document.getElementById('core');
+    const lgs = cats.map((c, i) => { const b = document.createElement('button'); b.className = 'lg'; b.type = 'button'; b.innerHTML = `<span class="dot" style="background:${c.c}"></span>${c.n}<b>₹${inr(c.a).int}</b>`; b.addEventListener('click', () => pick(i)); legend.appendChild(b); return b; });
+    function pick(i) {
+      sel = sel === i ? -1 : i;
+      petals.forEach((pt, j) => { pt.p.style.opacity = sel < 0 || sel === j ? 1 : 0.28; sc[j].t = sel === j ? 1.09 : 1; });
+      lgs.forEach((b, j) => b.classList.toggle('sel', sel === j));
+      if (sel < 0) core.innerHTML = '<b>7 categories</b><span>Tap a petal</span>';
+      else { const c = cats[sel]; core.innerHTML = `<span>${c.n}</span><b>₹${inr(c.a).int}</b><span>${Math.round(c.a / TOTAL * 100)}% of trip</span>`; }
+      kick();
+    }
+    function bloom() {
+      sel = 0; pick(0); // clears to "none" via toggle
+      sc.forEach(s => { s.x = 0.05; s.v = 0; s.t = 0.05; });
+      render();
+      sc.forEach((s, i) => setTimeout(() => { s.t = 1; kick(); }, reduce ? 0 : 90 + i * 85));
+    }
+    render();
+    document.getElementById('replay').addEventListener('click', bloom);
+    if ('IntersectionObserver' in window && !reduce) {
+      const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); bloom(); } }, { threshold: 0.6 });
+      io.observe(document.getElementById('bloomwrap'));
+    }
+  }
+})();
+</script>

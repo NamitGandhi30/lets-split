@@ -1,0 +1,103 @@
+@import "tailwindcss";
+@import "@fontsource-variable/outfit";
+
+/* Design tokens from the approved design system (Figma board at y=3000, docs/BUILD-BRIEF.md). */
+@theme {
+  --font-sans: "Outfit Variable", "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Dark chrome */
+  --color-page: #0b0c0e;
+  --color-chrome: #0e0f12;
+  --color-surface: #1c1e23;
+  --color-raised: #1f2126;
+  --color-tabbar: #141518;
+  --color-on-dark: #f2f3f5;
+  --color-on-dark-2: #e6e8ec;
+  --color-dim: #9096a3;
+  --color-dimmer: #6e7480;
+
+  /* Light sheet */
+  --color-sheet: #f6f6f7;
+  --color-card: #ffffff;
+  --color-ink: #121316;
+  --color-muted: #6c717c;
+  --color-hairline: #f0f1f3;
+  --color-grab: #cdd0d6;
+  --color-split: #eef1fb;
+
+  /* Trip accents */
+  --color-goa: #f4d23c;
+  --color-manali: #3fd0b6;
+  --color-jaipur: #5c8dff;
+  --color-cobalt: #3d5bff;
+  --color-sun: #f4e22c;
+  --color-peri: #a9b8ff;
+
+  /* Money */
+  --color-pos: #2fa372;
+  --color-neg: #e6613d;
+  --color-neg-soft: #ff9c7a;
+  --color-alert: #ff5a3c;
+
+  --radius-card: 22px;
+  --radius-sheet: 30px;
+  --radius-tile: 13px;
+
+  --ease-out-soft: cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  html {
+    background: var(--color-chrome);
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
+  }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--color-chrome);
+    color: var(--color-on-dark);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    font-variant-numeric: tabular-nums;
+  }
+  button {
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-cobalt);
+    outline-offset: 2px;
+  }
+}
+
+/* Safe areas for the installed iPhone app (viewport-fit=cover). */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "lets-split",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.18.3",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @lets-split/web --filter @lets-split/api dev",
+    "build": "pnpm --filter @lets-split/web build",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "dev:web": "pnpm --filter @lets-split/web dev",
+    "dev:api": "pnpm --filter @lets-split/api dev",
+    "gen:api": "pnpm --filter @lets-split/api openapi && pnpm --filter @lets-split/web gen:api"
+  }
+}

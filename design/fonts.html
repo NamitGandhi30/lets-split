@@ -1,0 +1,87 @@
+<title>Let's Split Fonts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;600;700&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;600;700&family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@500;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap">
+<style>
+/* Layout: a grid of phone-sized type cards, one per pairing, dark-first like the app shell. */
+:root{--bg:#0E0F12;--card:#16181C;--sheet:#F6F6F7;--ink:#121316;--text:#F2F3F5;--muted:#9096A3;--line:#26282E;color-scheme:dark}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#ECEDF0;--card:#16181C;--sheet:#FFFFFF;--line:#D6D8DE;--muted:#5B606C;color-scheme:light}}
+:root[data-theme="light"]{--bg:#ECEDF0;--card:#16181C;--sheet:#FFFFFF;--line:#D6D8DE;--muted:#5B606C;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "DM Sans",system-ui,sans-serif;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 56px}
+header{max-width:1200px;margin:0 auto 24px}
+header h1{font:700 30px/1.1 "Outfit",sans-serif;margin:0 0 6px;color:var(--ink)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) header h1{color:var(--text)}}
+:root[data-theme="dark"] header h1{color:var(--text)}
+header p{margin:0;color:var(--muted);max-width:60ch}
+.grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{background:var(--card);border-radius:28px;overflow:hidden;display:flex;flex-direction:column;min-width:0;border:1px solid var(--line)}
+.top{padding:22px 20px 18px;display:flex;flex-direction:column;gap:4px}
+.tag{font:600 11px/1 "DM Sans",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#7EE2B8}
+.lbl{color:#9096A3;font-size:13px;margin-top:10px}
+.amt{display:flex;align-items:baseline;gap:2px;color:#F2F3F5;line-height:1}
+.amt .c{font-size:22px;opacity:.75}.amt .w{font-size:50px}.amt .d{font-size:20px;opacity:.5}
+.sheet{background:var(--sheet);color:var(--ink);padding:18px 20px 20px;border-radius:24px 24px 0 0;display:flex;flex-direction:column;gap:8px;flex:1}
+.sheet h3{margin:0;font-size:24px;line-height:1.1}
+.sheet p{margin:0;font-size:13.5px;color:#6C717C}
+.row{display:flex;justify-content:space-between;align-items:center;background:#F1F2F4;border-radius:14px;padding:10px 12px;font-size:13.5px}
+.row b{font-weight:600}
+.quote{font-size:17px;line-height:1.25;margin-top:4px}
+.name{font:600 13px/1 "DM Sans",sans-serif;color:#7EE2B8;margin-bottom:2px}
+.fnote{font-size:11.5px;color:#9096A3;font-family:ui-monospace,Consolas,monospace}
+/* pairings */
+.p1 .disp{font-family:"Unbounded",sans-serif;font-weight:700;letter-spacing:-.03em}.p1 .body{font-family:"Manrope",sans-serif}
+.p2 .disp{font-family:"Instrument Serif",serif;font-weight:400;letter-spacing:-.01em}.p2 .body{font-family:"Inter Tight",sans-serif}
+.p3 .disp{font-family:"Syne",sans-serif;font-weight:800;letter-spacing:-.02em}.p3 .body{font-family:"DM Sans",sans-serif}
+.p4 .disp{font-family:"Outfit",sans-serif;font-weight:800;letter-spacing:-.03em}.p4 .body{font-family:"Outfit",sans-serif}
+.p5 .disp{font-family:"Space Grotesk",sans-serif;font-weight:700;letter-spacing:-.04em}.p5 .body{font-family:"Plus Jakarta Sans",sans-serif}
+.p2 .amt .w{font-size:58px}.p2 .sheet h3{font-size:30px;font-style:italic}
+</style>
+
+<header>
+  <h1>Pick the new type</h1>
+  <p>Same screen in five pairings: big balance on the dark header, a light sheet below, and a Wrapped-style quote. All free Google Fonts that also work in Figma.</p>
+</header>
+<div class="grid">
+  <article class="card p1">
+    <div class="top body"><span class="name">A · Unbounded + Manrope</span><span class="fnote">rounded, wide, playful</span>
+      <span class="lbl">You're owed in Manali</span>
+      <div class="amt disp"><span class="c">₹</span><span class="w">1,260</span><span class="d">.00</span></div></div>
+    <div class="sheet body"><h3 class="disp">New trip</h3><p>Name it, tag where you're going, add your people.</p>
+      <div class="row"><b>Paragliding at Solang</b><span class="disp">₹14,000</span></div>
+      <div class="quote disp">Meera swiped her card more than the wind swiped our caps.</div></div>
+  </article>
+  <article class="card p2">
+    <div class="top body"><span class="name">B · Instrument Serif + Inter Tight</span><span class="fnote">editorial, elegant, premium</span>
+      <span class="lbl">You're owed in Manali</span>
+      <div class="amt disp"><span class="c">₹</span><span class="w">1,260</span><span class="d">.00</span></div></div>
+    <div class="sheet body"><h3 class="disp">New trip</h3><p>Name it, tag where you're going, add your people.</p>
+      <div class="row"><b>Paragliding at Solang</b><span>₹14,000</span></div>
+      <div class="quote disp">Meera swiped her card more than the wind swiped our caps.</div></div>
+  </article>
+  <article class="card p3">
+    <div class="top body"><span class="name">C · Syne + DM Sans</span><span class="fnote">quirky, artsy, loud</span>
+      <span class="lbl">You're owed in Manali</span>
+      <div class="amt disp"><span class="c">₹</span><span class="w">1,260</span><span class="d">.00</span></div></div>
+    <div class="sheet body"><h3 class="disp">New trip</h3><p>Name it, tag where you're going, add your people.</p>
+      <div class="row"><b>Paragliding at Solang</b><span class="disp">₹14,000</span></div>
+      <div class="quote disp">Meera swiped her card more than the wind swiped our caps.</div></div>
+  </article>
+  <article class="card p4">
+    <div class="top body"><span class="name">D · Outfit (one family)</span><span class="fnote">geometric, friendly, clean</span>
+      <span class="lbl">You're owed in Manali</span>
+      <div class="amt disp"><span class="c">₹</span><span class="w">1,260</span><span class="d">.00</span></div></div>
+    <div class="sheet body"><h3 class="disp">New trip</h3><p>Name it, tag where you're going, add your people.</p>
+      <div class="row"><b>Paragliding at Solang</b><span class="disp">₹14,000</span></div>
+      <div class="quote disp">Meera swiped her card more than the wind swiped our caps.</div></div>
+  </article>
+  <article class="card p5">
+    <div class="top body"><span class="name">E · Space Grotesk + Plus Jakarta Sans</span><span class="fnote">techy, sharp, fintech</span>
+      <span class="lbl">You're owed in Manali</span>
+      <div class="amt disp"><span class="c">₹</span><span class="w">1,260</span><span class="d">.00</span></div></div>
+    <div class="sheet body"><h3 class="disp">New trip</h3><p>Name it, tag where you're going, add your people.</p>
+      <div class="row"><b>Paragliding at Solang</b><span class="disp">₹14,000</span></div>
+      <div class="quote disp">Meera swiped her card more than the wind swiped our caps.</div></div>
+  </article>
+</div>

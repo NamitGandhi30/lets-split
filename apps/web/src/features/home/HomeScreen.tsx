@@ -1,0 +1,185 @@
+import { whatsappSummary } from "@lets-split/core";
+import { motion } from "motion/react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router";
+import type { Group } from "../../api/client";
+import { useBalances, useGroups, useMe, useMembers, useRecentExpenses } from "../../api/hooks";
+import { Amount, useCountUp } from "../../ui/Amount";
+import { Avatar } from "../../ui/Avatar";
+import { BellIcon } from "../../ui/icons";
+import { snappy } from "../../ui/motion";
+import { useToast } from "../../ui/Toast";
+import { EmptyStack, TripStack } from "./TripStack";
+import { ExpenseRow, RecentSheet } from "./RecentSheet";
+
+function Pill({ children, primary, onClick }: { children: string; primary?: boolean; onClick?: () => void }) {
+  return (
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.95 }}
+      transition={snappy}
+      onClick={onClick}
+      className={`h-9 rounded-full px-4 text-[14px] font-semibold ${primary ? "bg-on-dark text-chrome" : "bg-raised text-on-dark-2"}`}
+    >
+      {children}
+    </motion.button>
+  );
+}
+
+export function HomeScreen() {
+  const toast = useToast();
+  const me = useMe();
+  const groups = useGroups();
+  const [current, setCurrent] = useState<Group | null>(null);
+  const trip = current && groups.data?.some((g) => g.id === current.id) ? current : (groups.data?.[0] ?? null);
+
+  const balances = useBalances(trip?.id);
+  const members = useMembers(trip?.id);
+  const recent = useRecentExpenses(trip?.id);
+  const memberMap = useMemo(() => new Map((members.data ?? []).map((m) => [m.id, m])), [members.data]);
+
+  const net = balances.data?.me?.netPaise ?? 0;
+  const shown = useCountUp(net);
+
+  // Sheet geometry: collapsed just under the trip stack, expanded near the top (prototype: 404 / 96).
+  const screen = useRef<HTMLDivElement>(null);
+  const stack = useRef<HTMLDivElement>(null);
+  const [geo, setGeo] = useState({ col: 0, exp: 96 });
+  useLayoutEffect(() => {
+    const measure = () => {
+      if (!stack.current || !screen.current) return;
+      const top = screen.current.getBoundingClientRect().top;
+      const r = stack.current.getBoundingClientRect();
+      const safeTop = parseFloat(getComputedStyle(screen.current).paddingTop) || 0;
+      setGeo({ col: Math.round(r.bottom - top + 26), exp: Math.round(safeTop + 40) });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (screen.current) ro.observe(screen.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const label = !trip
+    ? "Your balance"
+    : net > 0
+      ? `You're owed in ${trip.name}`
+      : net < 0
+        ? `You owe in ${trip.name}`
+        : `All square in ${trip.name}`;
+
+  async function share() {
+    if (!trip || !balances.data || !members.data) return;
+    const names = Object.fromEntries(members.data.map((m) => [m.id, m.isMe ? "You" : m.displayName]));
+    const text = whatsappSummary({
+      groupName: trip.name,
+      names,
+      totalSpent: balances.data.totalSpentPaise,
+      nets: Object.fromEntries(balances.data.nets.map((n) => [n.memberId, n.netPaise])),
+      transfers: balances.data.transfers.map((t) => ({ from: t.from, to: t.to, amount: t.amountPaise })),
+      upiIds: me.data?.upiId && balances.data.me ? { [balances.data.me.memberId]: me.data.upiId } : undefined,
+    });
+    try {
+      if (navigator.share) await navigator.share({ text });
+      else {
+        await navigator.clipboard.writeText(text);
+        toast("Summary copied. Paste it in WhatsApp.");
+      }
+    } catch {
+      /* share sheet dismissed */
+    }
+  }
+
+  return (
+    <div ref={screen} className="relative h-full overflow-hidden bg-chrome pt-safe">
+      <header className="flex items-center gap-2.5 px-[22px] pt-2">
+        <Link to="/me" aria-label="Your profile">
+          <Avatar seed={me.data?.id ?? "you"} avatarKey={me.data?.avatarKey ?? "you"} photoUrl={me.data?.avatarUrl} size={40} />
+        </Link>
+        <Link
+          to="/alerts"
+          aria-label="Alerts"
+          className="relative ml-auto grid h-10 w-10 place-items-center rounded-full bg-surface text-on-dark"
+        >
+          <BellIcon />
+        </Link>
+      </header>
+
+      <section className="px-6 pt-5">
+        <p className="text-[14px] text-dim">{label}</p>
+        <div className="mt-1">
+          <Amount
+            paise={shown}
+            absolute
+            size={{ cur: 26, whole: 56, dec: 22 }}
+            className="text-on-dark"
+            wholeStyle={{ color: net < 0 ? "var(--color-neg-soft)" : undefined }}
+          />
+        </div>
+        <div className="mt-3.5 flex gap-2">
+          <Pill primary onClick={() => toast("Settle up with UPI is coming in the next build")}>
+            Settle up
+          </Pill>
+          <Pill onClick={() => toast("Reminders are coming in the next build")}>Remind</Pill>
+          <Pill onClick={share}>Share</Pill>
+        </div>
+      </section>
+
+      <div ref={stack} className="mt-[26px] px-6">
+        {groups.isPending ? (
+          <div className="h-[78px] w-[min(300px,calc(100%-28px))] animate-pulse rounded-[20px] bg-surface" />
+        ) : groups.data?.length ? (
+          <TripStack groups={groups.data} onChange={setCurrent} />
+        ) : (
+          <EmptyStack />
+        )}
+      </div>
+
+      <RecentSheet
+        collapsedY={geo.col}
+        expandedY={geo.exp}
+        header={
+          <div className="flex items-baseline justify-between px-[22px] pt-1 pb-3">
+            <b className="text-[17px] font-semibold">{trip ? `Recent in ${trip.name}` : "Recent"}</b>
+            {trip && (
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => toast("The full trip page is coming in the next build")}
+                className="text-[13px] font-medium text-muted"
+              >
+                See all ›
+              </button>
+            )}
+          </div>
+        }
+      >
+        <div className="mx-[18px] rounded-[var(--radius-card)] bg-card px-3.5 py-1">
+          {groups.isError || recent.isError ? (
+            <p className="py-6 text-center text-[14px] text-muted">Couldn't load. Pull down or try again in a bit.</p>
+          ) : !trip ? (
+            <p className="py-6 text-center text-[14px] leading-[1.5] text-muted">
+              Nothing here yet.
+              <br />
+              Expenses you add will show up here.
+            </p>
+          ) : recent.isPending ? (
+            Array.from({ length: 3 }, (_, i) => (
+              <div key={i} className="flex items-center gap-3 py-3">
+                <span className="h-[42px] w-[42px] animate-pulse rounded-[13px] bg-hairline" />
+                <span className="h-4 flex-1 animate-pulse rounded bg-hairline" />
+              </div>
+            ))
+          ) : recent.data?.items.length ? (
+            <div key={trip.id}>
+              {recent.data.items.map((e, i) => (
+                <ExpenseRow key={e.id} e={e} i={i} members={memberMap} myMemberId={trip.myMemberId} />
+              ))}
+            </div>
+          ) : (
+            <p className="py-6 text-center text-[14px] text-muted">No expenses in {trip.name} yet. Tap ＋ to add one.</p>
+          )}
+        </div>
+      </RecentSheet>
+    </div>
+  );
+}
