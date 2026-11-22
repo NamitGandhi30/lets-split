@@ -147,6 +147,15 @@ describe.skipIf(!enabled)("phase 2 flow (two accounts)", () => {
     expect((await call(bob, "GET", `/groups/${crypto.randomUUID()}/stats`)).status).toBe(404);
   });
 
+  it("wrapped: real numbers for the five stories", async () => {
+    const w = await j(await call(bob, "GET", `/groups/${groupId}/wrapped`));
+    expect(w).toMatchObject({ tripName: "Manali test", people: 2, expenseCount: 6, totalPaise: 7000 });
+    expect(w.categories.length).toBeGreaterThan(0);
+    expect(w.topPayer.paidPaise).toBeGreaterThan(0);
+    expect(w.me.memberId).toBe(ph);
+    expect(w.me.logged).toBe(5);
+  });
+
   it("alerts: alice sees bob's actions as unread; marking seen clears them", async () => {
     const f = await j(await call(alice, "GET", `/activity?groupId=${groupId}`));
     const kinds = f.items.map((i: J) => i.kind);

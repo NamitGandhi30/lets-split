@@ -116,3 +116,10 @@ export const useStats = (groupId?: string) =>
     enabled: Boolean(groupId),
     queryFn: () => unwrap(api.GET("/api/v1/groups/{groupId}/stats", path(groupId!))),
   });
+
+export const useWrapped = (groupId?: string) =>
+  useQuery({
+    queryKey: [...keys.group(groupId ?? ""), "wrapped"],
+    enabled: Boolean(groupId),
+    queryFn: () => unwrap(api.GET("/api/v1/groups/{groupId}/wrapped", path(groupId!))),
+  });

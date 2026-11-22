@@ -348,3 +348,31 @@ export const TripStats = z
     biggest: z.object({ id: Uuid, description: z.string(), amountPaise: Paise }).nullable(),
   })
   .openapi("TripStats");
+
+// ---------- wrapped ----------
+export const Wrapped = z
+  .object({
+    groupId: Uuid,
+    tripName: z.string(),
+    days: z.number().int(),
+    people: z.number().int(),
+    expenseCount: z.number().int(),
+    totalPaise: Paise,
+    perDayPaise: Paise,
+    perPersonPaise: Paise,
+    chaiCount: z.number().int().openapi({ description: "Expenses named like chai / tea / coffee." }),
+    topPayer: z.object({ memberId: Uuid, name: z.string(), paidPaise: Paise, count: z.number().int() }).nullable(),
+    me: z
+      .object({
+        memberId: Uuid,
+        personality: z.enum(["chai-accountant", "big-spender", "night-owl", "foodie", "silent-partner", "trip-treasurer"]),
+        logged: z.number().int(),
+        paidPaise: Paise,
+        smallestLoggedPaise: Paise.nullable(),
+        lateNight: z.number().int(),
+      })
+      .nullable(),
+    categories: z.array(z.object({ category: z.string(), percent: z.number() })),
+    biggest: z.object({ description: z.string(), amountPaise: Paise }).nullable(),
+  })
+  .openapi("Wrapped");

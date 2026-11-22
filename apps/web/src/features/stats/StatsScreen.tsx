@@ -1,7 +1,7 @@
 import { formatINR } from "@lets-split/core";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import type { TripStats } from "../../api/client";
 import { useGroups, useStats } from "../../api/hooks";
 import { accentOr, isDark } from "../../lib/color";
@@ -9,7 +9,6 @@ import { useCurrentTripId } from "../../lib/currentTrip";
 import { CATEGORIES, tileColor } from "../../lib/people";
 import { Amount } from "../../ui/Amount";
 import { bouncy, snappy } from "../../ui/motion";
-import { useToast } from "../../ui/Toast";
 
 // Layout follows the approved Figma "Stats" screen: title + Wrapped pill, total, flower chart with
 // legend, and the dark daily-spend card.
@@ -24,7 +23,7 @@ export function StatsScreen() {
   const currentId = useCurrentTripId();
   const trip = open.find((g) => g.id === currentId) ?? open[0];
   const stats = useStats(trip?.id);
-  const toast = useToast();
+  const nav = useNavigate();
 
   if (groups.isPending) return <div className="h-full bg-sheet" />;
   if (!trip) {
@@ -54,7 +53,7 @@ export function StatsScreen() {
             type="button"
             whileTap={{ scale: 0.95 }}
             transition={snappy}
-            onClick={() => toast("Trip Wrapped is coming in the next build")}
+            onClick={() => nav("/wrapped")}
             className="flex h-8 items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,#FF2E93,#E8221B_55%,#B3121F)] pr-3.5 pl-1.5 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_rgba(232,34,27,.28)]"
           >
             <span className="grid h-5 w-5 place-items-center rounded-[6px] bg-white text-[9px] text-[#E8221B]" aria-hidden="true">

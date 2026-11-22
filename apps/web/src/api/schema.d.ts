@@ -2158,6 +2158,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/groups/{groupId}/wrapped": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Numbers for the five Trip Wrapped stories */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    groupId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Wrapped */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Wrapped"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2811,6 +2885,81 @@ export interface components {
                  * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
                  */
                 id: string;
+                description: string;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                amountPaise: number;
+            } | null;
+        };
+        Wrapped: {
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            groupId: string;
+            tripName: string;
+            days: number;
+            people: number;
+            expenseCount: number;
+            /**
+             * @description Integer paise (₹1 = 100).
+             * @example 428050
+             */
+            totalPaise: number;
+            /**
+             * @description Integer paise (₹1 = 100).
+             * @example 428050
+             */
+            perDayPaise: number;
+            /**
+             * @description Integer paise (₹1 = 100).
+             * @example 428050
+             */
+            perPersonPaise: number;
+            /** @description Expenses named like chai / tea / coffee. */
+            chaiCount: number;
+            topPayer: {
+                /**
+                 * Format: uuid
+                 * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+                 */
+                memberId: string;
+                name: string;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                paidPaise: number;
+                count: number;
+            } | null;
+            me: {
+                /**
+                 * Format: uuid
+                 * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+                 */
+                memberId: string;
+                /** @enum {string} */
+                personality: "chai-accountant" | "big-spender" | "night-owl" | "foodie" | "silent-partner" | "trip-treasurer";
+                logged: number;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                paidPaise: number;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                smallestLoggedPaise: number | null;
+                lateNight: number;
+            } | null;
+            categories: {
+                category: string;
+                percent: number;
+            }[];
+            biggest: {
                 description: string;
                 /**
                  * @description Integer paise (₹1 = 100).

@@ -101,3 +101,24 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Trip Wrapped: gradient shards drifting behind the story text (prototype .shard). */
+@keyframes shard-drift {
+  from {
+    transform: translate(var(--x0), var(--y0)) rotate(var(--r0)) scale(1);
+  }
+  to {
+    transform: translate(var(--x1), var(--y1)) rotate(var(--r1)) scale(1.12);
+  }
+}
+.wrapped-shard {
+  position: absolute;
+  border-radius: 6px;
+  opacity: 0.9;
+  animation: shard-drift var(--t) ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wrapped-shard {
+    animation: none;
+  }
+}

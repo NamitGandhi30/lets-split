@@ -8,6 +8,7 @@ import { groupRoutes } from "./routes/groups.ts";
 import { meRoutes } from "./routes/me.ts";
 import { socialRoutes } from "./routes/social.ts";
 import { statsRoutes } from "./routes/stats.ts";
+import { wrappedRoutes } from "./routes/wrapped.ts";
 import { router, validationHook } from "./routes/util.ts";
 
 export const API_VERSION = "0.3.0";
@@ -67,6 +68,7 @@ export function createApp(opts: AppOptions = {}) {
   v1.route("/", expenseRoutes);
   v1.route("/", socialRoutes);
   v1.route("/", statsRoutes);
+  v1.route("/", wrappedRoutes);
   app.route("/v1", v1);
 
   app.notFound((c) => c.json(errorBody("NOT_FOUND", "No such endpoint."), 404));

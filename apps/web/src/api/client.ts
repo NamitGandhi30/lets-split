@@ -53,3 +53,4 @@ export async function unwrap<T>(p: Promise<{ data?: T; error?: unknown; response
 /** Idempotency-Key header: the same key is resent on every retry of one user action. */
 export const idem = (key: string) => ({ headers: { "idempotency-key": key } });
 export type TripStats = Schemas["TripStats"];
+export type WrappedData = Schemas["Wrapped"];

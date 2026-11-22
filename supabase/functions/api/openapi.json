@@ -1771,6 +1771,195 @@
           "me",
           "biggest"
         ]
+      },
+      "Wrapped": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "tripName": {
+            "type": "string"
+          },
+          "days": {
+            "type": "integer"
+          },
+          "people": {
+            "type": "integer"
+          },
+          "expenseCount": {
+            "type": "integer"
+          },
+          "totalPaise": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000000,
+            "description": "Integer paise (₹1 = 100).",
+            "example": 428050
+          },
+          "perDayPaise": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000000,
+            "description": "Integer paise (₹1 = 100).",
+            "example": 428050
+          },
+          "perPersonPaise": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000000,
+            "description": "Integer paise (₹1 = 100).",
+            "example": 428050
+          },
+          "chaiCount": {
+            "type": "integer",
+            "description": "Expenses named like chai / tea / coffee."
+          },
+          "topPayer": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "memberId": {
+                "type": "string",
+                "format": "uuid",
+                "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+              },
+              "name": {
+                "type": "string"
+              },
+              "paidPaise": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000000000,
+                "description": "Integer paise (₹1 = 100).",
+                "example": 428050
+              },
+              "count": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "memberId",
+              "name",
+              "paidPaise",
+              "count"
+            ]
+          },
+          "me": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "memberId": {
+                "type": "string",
+                "format": "uuid",
+                "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+              },
+              "personality": {
+                "type": "string",
+                "enum": [
+                  "chai-accountant",
+                  "big-spender",
+                  "night-owl",
+                  "foodie",
+                  "silent-partner",
+                  "trip-treasurer"
+                ]
+              },
+              "logged": {
+                "type": "integer"
+              },
+              "paidPaise": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000000000,
+                "description": "Integer paise (₹1 = 100).",
+                "example": 428050
+              },
+              "smallestLoggedPaise": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 10000000000,
+                "description": "Integer paise (₹1 = 100).",
+                "example": 428050
+              },
+              "lateNight": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "memberId",
+              "personality",
+              "logged",
+              "paidPaise",
+              "smallestLoggedPaise",
+              "lateNight"
+            ]
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "string"
+                },
+                "percent": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "category",
+                "percent"
+              ]
+            }
+          },
+          "biggest": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "amountPaise": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000000000,
+                "description": "Integer paise (₹1 = 100).",
+                "example": 428050
+              }
+            },
+            "required": [
+              "description",
+              "amountPaise"
+            ]
+          }
+        },
+        "required": [
+          "groupId",
+          "tripName",
+          "days",
+          "people",
+          "expenseCount",
+          "totalPaise",
+          "perDayPaise",
+          "perPersonPaise",
+          "chaiCount",
+          "topPayer",
+          "me",
+          "categories",
+          "biggest"
+        ]
       }
     },
     "parameters": {}
@@ -4347,6 +4536,83 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TripStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/groups/{groupId}/wrapped": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Numbers for the five Trip Wrapped stories",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "groupId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wrapped",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Wrapped"
                 }
               }
             }
