@@ -1,7 +1,8 @@
 import { useIsMutating, useIsRestoring } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { useLocation, useOutlet } from "react-router";
+import { Navigate, useLocation, useOutlet } from "react-router";
+import { useMe } from "../api/hooks";
 import { useChangePings } from "../lib/realtime";
 import { CloudOffIcon } from "../ui/icons";
 import { snappy } from "../ui/motion";
@@ -34,7 +35,13 @@ export function AppShell() {
   const restoring = useIsRestoring();
   const queued = useIsMutating();
   useChangePings(online && !restoring);
+  const me = useMe();
   const page = isPage(loc.pathname);
+
+  // First run: name, avatar and UPI before anything else (an invite link resumes afterwards).
+  if (me.data && !me.data.onboarded && loc.pathname !== "/welcome") {
+    return <Navigate to={`/welcome?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />;
+  }
 
   return (
     <div className="relative h-full overflow-hidden bg-chrome">
@@ -42,10 +49,11 @@ export function AppShell() {
         <motion.main
           key={loc.pathname}
           className="absolute inset-0"
-          initial={page ? { opacity: 0, x: 40 } : { opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.97 }}
-          transition={{ opacity: { duration: 0.35 }, scale: { duration: 0.45, ease: [0.2, 0.9, 0.2, 1] }, x: { duration: 0.45, ease: [0.2, 0.9, 0.2, 1] } }}
+          style={{ willChange: "opacity, transform" }}
+          initial={page ? { opacity: 0, x: 24 } : { opacity: 0 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, transition: { duration: 0.12 } }}
+          transition={{ opacity: { duration: 0.2 }, x: snappy }}
         >
           {outlet}
         </motion.main>

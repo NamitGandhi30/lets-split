@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import type { Member } from "../../api/client";
 import { firstName } from "../../lib/people";
 import { Avatar } from "../../ui/Avatar";
@@ -18,11 +19,20 @@ export function UnevenSliders({
   const scale = Math.max(1, total);
   const narrow = members.length > 5;
 
+  // Pointer moves arrive faster than frames; apply at most one rebalance per frame.
+  const pending = useRef<{ i: number; v: number } | null>(null);
+  const raf = useRef(0);
   const setFrom = (i: number, el: HTMLElement, clientY: number) => {
     const r = el.getBoundingClientRect();
     const p01 = Math.max(0, Math.min(1, (r.bottom - clientY - MH / 2) / (r.height - MH)));
     // Snap to whole rupees while dragging; exact paise come from the rebalance.
-    onSet(i, Math.round((p01 * scale) / 100) * 100);
+    pending.current = { i, v: Math.round((p01 * scale) / 100) * 100 };
+    if (raf.current) return;
+    raf.current = requestAnimationFrame(() => {
+      raf.current = 0;
+      const p = pending.current;
+      if (p) onSet(p.i, p.v);
+    });
   };
 
   return (

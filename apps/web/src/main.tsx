@@ -36,7 +36,21 @@ const persister = createSyncStoragePersister({
   throttleTime: 1000,
 });
 
-if (import.meta.env.PROD) registerSW({ immediate: true });
+// The installed iPhone app rarely reloads, so look for a new version whenever it comes back to the
+// foreground (and hourly). autoUpdate then swaps in the new build and reloads.
+if (import.meta.env.PROD) {
+  registerSW({
+    immediate: true,
+    onRegisteredSW(_url, reg) {
+      if (!reg) return;
+      const check = () => {
+        if (navigator.onLine) reg.update().catch(() => {});
+      };
+      document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && check());
+      setInterval(check, 60 * 60_000);
+    },
+  });
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

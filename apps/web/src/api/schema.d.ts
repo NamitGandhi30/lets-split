@@ -2100,6 +2100,7 @@ export interface components {
             avatarUrl: string | null;
             upiId: string | null;
             noUpi: boolean;
+            onboarded: boolean;
         };
         Error: {
             error: {
@@ -2116,6 +2117,8 @@ export interface components {
             /** @example namit@okicici */
             upiId?: string | null;
             noUpi?: boolean;
+            /** @enum {boolean} */
+            onboarded?: true;
         };
         Group: {
             /**

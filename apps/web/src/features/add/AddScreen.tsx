@@ -21,6 +21,18 @@ import { UnevenSliders } from "./UnevenSliders";
 type Mode = "equal" | "uneven" | MoreMode;
 const MAX_PAISE = 10_000_000_000;
 
+/** One-tap names; anything typed works too ("tapri ki chai", "snorkelling"...). */
+const SUGGESTIONS = [
+  { label: "Chai", category: "food" },
+  { label: "Dinner", category: "food" },
+  { label: "Cab", category: "travel" },
+  { label: "Fuel", category: "travel" },
+  { label: "Drinks", category: "drinks" },
+  { label: "Stay", category: "stay" },
+  { label: "Tickets", category: "fun" },
+  { label: "Groceries", category: "shopping" },
+];
+
 const toPaise = (s: string) => {
   const n = Number(s);
   return Number.isFinite(n) ? Math.round(n * 100) : NaN;
@@ -113,6 +125,9 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
   );
   const [sheet, setSheet] = useState<null | "trip" | "payer" | "category" | "more">(null);
   const [stamped, setStamped] = useState(false);
+  const [nudge, setNudge] = useState<null | "amount" | "name">(null);
+  const amountRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
   const [shake, setShake] = useState<string | null>(null);
   const ticket = useAnimationControls();
   const ready = useRef(false);
@@ -206,9 +221,9 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
   const myPaid = payerList.find((p) => p.memberId === myId)?.amountPaise ?? 0;
   const back = myPaid - myShare;
   const cta = !validTotal
-    ? "Enter an amount"
+    ? "Enter the amount"
     : !description.trim()
-      ? "What was it for?"
+      ? "Name it to save"
       : preview.error
         ? preview.error
         : back > 0
@@ -230,8 +245,20 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
     setOn(next);
   }
 
+  function flag(what: "amount" | "name") {
+    setNudge(what);
+    (what === "amount" ? amountRef : nameRef).current?.focus();
+    setTimeout(() => setNudge(null), 900);
+  }
+
   function save() {
-    if (!canSave || !split) return;
+    if (stamped) return;
+    if (!validTotal) return flag("amount");
+    if (!description.trim()) return flag("name");
+    if (!canSave || !split) {
+      if (preview.error) toast(preview.error);
+      return;
+    }
     const spentAt = date === today() && !existing ? new Date().toISOString() : new Date(`${date}T12:00:00`).toISOString();
     const body = {
       description: description.trim(),
@@ -281,21 +308,16 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
         </motion.button>
       </div>
 
-      <div className="mt-6 px-6 text-center">
-        <input
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          maxLength={120}
-          placeholder="What was it for?"
-          aria-label="What was it for?"
-          className="w-full bg-transparent text-center text-[15px] font-medium text-[#6A6F82] outline-none placeholder:text-[#8D92A6]"
-        />
-        <label className="mt-0.5 flex items-baseline justify-center font-bold tracking-[-0.02em]">
+      <div className="mt-4 px-5 text-center">
+        <motion.label animate={nudge === "amount" ? { x: [0, -8, 8, -4, 0] } : { x: 0 }} transition={{ duration: 0.4 }} className="flex cursor-text items-baseline justify-center font-bold tracking-[-0.02em]">
           <span className="sr-only">Amount in rupees</span>
           <span className={`text-[26px] ${validTotal ? "" : "text-ink/30"}`}>₹</span>
           <input
+            ref={amountRef}
             autoFocus={!existing}
             inputMode="decimal"
+            enterKeyHint="next"
+            onKeyDown={(e) => e.key === "Enter" && nameRef.current?.focus()}
             value={amount}
             placeholder="0"
             onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1").replace(/(\.\d\d)\d+$/, "$1"))}
@@ -303,7 +325,50 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
             style={{ width: `${Math.max(1, (amount || "0").length) * 0.62 + 0.1}em` }}
           />
           <span className="text-[22px] font-medium text-[#8D92A6]">{amount.includes(".") ? "" : parts.decimal}</span>
-        </label>
+        </motion.label>
+
+        <motion.label
+          animate={nudge === "name" ? { x: [0, -8, 8, -4, 0] } : { x: 0 }}
+          transition={{ duration: 0.4 }}
+          className={`mt-3 flex h-[54px] items-center gap-2.5 rounded-[18px] bg-card px-4 text-left ring-2 transition-shadow ${nudge === "name" ? "ring-neg" : "ring-transparent focus-within:ring-cobalt"}`}
+        >
+          <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: tileColor(category) }} aria-hidden="true" />
+          <span className="sr-only">Name this expense</span>
+          <input
+            ref={nameRef}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={120}
+            enterKeyHint="done"
+            autoCapitalize="sentences"
+            placeholder="Name it: tapri ki chai, snorkelling…"
+            className="min-w-0 flex-1 bg-transparent text-[17px] font-semibold text-ink outline-none placeholder:font-medium placeholder:text-[#A2A7B2]"
+          />
+          {description && (
+            <button type="button" aria-label="Clear name" onClick={() => setDescription("")} className="grid h-7 w-7 place-items-center rounded-full bg-sheet text-[15px] text-muted">
+              ×
+            </button>
+          )}
+        </motion.label>
+        {!description.trim() && !existing && (
+          <div className="no-scrollbar -mx-5 mt-2 flex gap-1.5 overflow-x-auto px-5">
+            {SUGGESTIONS.map((s) => (
+              <motion.button
+                key={s.label}
+                type="button"
+                whileTap={{ scale: 0.94 }}
+                transition={snappy}
+                onClick={() => {
+                  setDescription(s.label);
+                  setCategory(s.category);
+                }}
+                className="h-8 shrink-0 rounded-full bg-white/70 px-3 text-[12.5px] font-semibold text-ink ring-1 ring-black/5"
+              >
+                {s.label}
+              </motion.button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="no-scrollbar mt-3 flex justify-center gap-2 overflow-x-auto px-5">
@@ -445,8 +510,8 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
           whileTap={canSave ? { scale: 0.97 } : undefined}
           transition={snappy}
           onClick={save}
-          disabled={!canSave}
-          className="h-14 w-full rounded-full bg-ink text-[15px] font-semibold text-white transition-opacity disabled:opacity-45"
+          aria-disabled={!canSave}
+          className="h-14 w-full rounded-full bg-ink text-[15px] font-semibold text-white transition-opacity aria-disabled:opacity-60"
         >
           {cta}
         </motion.button>

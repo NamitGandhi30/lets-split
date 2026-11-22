@@ -93,6 +93,9 @@ export function TripScreen() {
           {active.slice(0, 8).map((m) => (
             <Avatar key={m.id} seed={m.id} avatarKey={m.avatarKey} size={34} className={`-mr-2 border-2 border-white ${m.isPlaceholder ? "opacity-60" : ""}`} />
           ))}
+          <span className="ml-3 flex h-[34px] items-center gap-1.5 rounded-full bg-card px-3 text-[13px] font-semibold">
+            <UserPlusIcon width={15} height={15} /> Add people
+          </span>
         </button>
         <div className="mt-4 flex gap-2.5">
           <div className="flex-1 rounded-[18px] bg-white/45 p-3">
@@ -175,6 +178,14 @@ export function TripScreen() {
         </motion.div>
       </AnimatePresence>
 
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-sheet from-55% to-transparent px-5 pt-6 pb-[calc(18px+env(safe-area-inset-bottom,0px))]">
+        <Link
+          to={`/add?group=${groupId}`}
+          className="pointer-events-auto flex h-14 items-center justify-center gap-2 rounded-full bg-ink text-[15px] font-semibold text-white shadow-[0_10px_24px_rgba(0,0,0,.18)] transition-transform active:scale-[0.97]"
+        >
+          <PlusIcon width={18} height={18} /> Add expense
+        </Link>
+      </div>
       {g && <InviteSheet open={inviteOpen} onClose={() => setInvite(false)} group={g} members={members.data ?? []} />}
       {g && <TripFormSheet open={edit} onClose={() => setEdit(false)} group={g} />}
       <Sheet open={menu} onClose={() => setMenu(false)} title={g?.name}>

@@ -36,6 +36,7 @@ export const Me = z
     avatarUrl: z.string().nullable(),
     upiId: z.string().nullable(),
     noUpi: z.boolean(),
+    onboarded: z.boolean(),
   })
   .openapi("Me");
 
@@ -46,6 +47,7 @@ export const MePatch = z
     avatarUrl: z.string().max(500).nullable(),
     upiId: Vpa.nullable(),
     noUpi: z.boolean(),
+    onboarded: z.literal(true),
   })
   .partial()
   .strict()

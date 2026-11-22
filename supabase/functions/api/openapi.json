@@ -58,6 +58,9 @@
           },
           "noUpi": {
             "type": "boolean"
+          },
+          "onboarded": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -67,7 +70,8 @@
           "avatarKey",
           "avatarUrl",
           "upiId",
-          "noUpi"
+          "noUpi",
+          "onboarded"
         ]
       },
       "Error": {
@@ -127,6 +131,12 @@
           },
           "noUpi": {
             "type": "boolean"
+          },
+          "onboarded": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
           }
         },
         "additionalProperties": false

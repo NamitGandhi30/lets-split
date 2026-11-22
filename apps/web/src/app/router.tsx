@@ -6,6 +6,7 @@ import { EmailScreen } from "../features/auth/EmailScreen";
 import { ProfileScreen } from "../features/auth/ProfileScreen";
 import { RedirectIfSignedIn, RequireAuth } from "../features/auth/session";
 import { ExpenseScreen } from "../features/expense/ExpenseScreen";
+import { OnboardingScreen } from "../features/onboarding/OnboardingScreen";
 import { HomeScreen } from "../features/home/HomeScreen";
 import { StatsScreen } from "../features/stats/StatsScreen";
 import { JoinScreen } from "../features/trips/JoinScreen";
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { path: "expenses/:expenseId", element: <ExpenseScreen /> },
       { path: "expenses/:expenseId/edit", element: <AddScreen /> },
       { path: "join/:code", element: <JoinScreen /> },
+      { path: "welcome", element: <OnboardingScreen /> },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

@@ -7,6 +7,7 @@ export interface ProfileRow {
   avatar_url: string | null;
   upi_id: string | null;
   no_upi: boolean;
+  onboarded_at: string | null;
 }
 
 export const toMe = (p: ProfileRow, email: string | null) => ({
@@ -17,6 +18,7 @@ export const toMe = (p: ProfileRow, email: string | null) => ({
   avatarUrl: p.avatar_url,
   upiId: p.upi_id,
   noUpi: p.no_upi,
+  onboarded: p.onboarded_at !== null,
 });
 
 export interface MemberRow {

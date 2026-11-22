@@ -47,6 +47,7 @@ meRoutes.openapi(
     if (b.noUpi !== undefined) patch.no_upi = b.noUpi;
     if (b.noUpi === true) patch.upi_id = null;
     if (b.upiId) patch.no_upi = false;
+    if (b.onboarded) patch.onboarded_at = new Date().toISOString();
 
     const db = c.get("db");
     const row = Object.keys(patch).length

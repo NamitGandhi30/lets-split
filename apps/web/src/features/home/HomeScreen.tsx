@@ -6,7 +6,7 @@ import type { Group } from "../../api/client";
 import { useActivity, useBalances, useGroups, useMe, useMembers, useRecentExpenses } from "../../api/hooks";
 import { Amount, useCountUp } from "../../ui/Amount";
 import { Avatar } from "../../ui/Avatar";
-import { BellIcon, PlusIcon } from "../../ui/icons";
+import { BellIcon, PlusIcon, UserPlusIcon } from "../../ui/icons";
 import { snappy } from "../../ui/motion";
 import { useToast } from "../../ui/Toast";
 import { EmptyStack, TripStack } from "./TripStack";
@@ -55,7 +55,6 @@ export function HomeScreen() {
   const memberMap = useMemo(() => new Map((members.data ?? []).map((m) => [m.id, m])), [members.data]);
 
   const net = balances.data?.me?.netPaise ?? 0;
-  const shown = useCountUp(net);
 
   // Sheet geometry: collapsed just under the trip stack, expanded near the top (prototype: 404 / 96).
   const screen = useRef<HTMLDivElement>(null);
@@ -161,8 +160,8 @@ export function HomeScreen() {
       <section className="px-6 pt-5">
         <p className="text-[14px] text-dim">{label}</p>
         <div className="mt-1">
-          <Amount
-            paise={shown}
+          <CountUpAmount
+            paise={net}
             absolute
             size={{ cur: 26, whole: 56, dec: 22 }}
             className="text-on-dark"
@@ -209,6 +208,22 @@ export function HomeScreen() {
           </div>
         }
       >
+        {trip && (
+          <div className="mx-[18px] mb-3 flex gap-2">
+            <Link
+              to={`/add?group=${trip.id}`}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-ink text-[14px] font-semibold text-white active:scale-[0.97] transition-transform"
+            >
+              <PlusIcon width={16} height={16} /> Add expense
+            </Link>
+            <Link
+              to={`/trips/${trip.id}?invite=1`}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-card text-[14px] font-semibold text-ink active:scale-[0.97] transition-transform"
+            >
+              <UserPlusIcon width={16} height={16} /> {trip.memberCount < 2 ? "Invite crew" : "Add people"}
+            </Link>
+          </div>
+        )}
         <div className="mx-[18px] rounded-[var(--radius-card)] bg-card px-3.5 py-1">
           {groups.isError || recent.isError ? (
             <p className="py-6 text-center text-[14px] text-muted">Couldn't load. Pull down or try again in a bit.</p>
@@ -242,4 +257,10 @@ export function HomeScreen() {
       {trip && settle && <SettleSheet open onClose={() => setSettle(null)} group={trip} members={members.data ?? []} target={settle} />}
     </div>
   );
+}
+
+/** Only this re-renders on each count-up frame, not the whole Home screen. */
+function CountUpAmount(props: React.ComponentProps<typeof Amount>) {
+  const shown = useCountUp(props.paise);
+  return <Amount {...props} paise={shown} />;
 }
