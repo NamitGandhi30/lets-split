@@ -12,7 +12,7 @@ import { newId } from "../../lib/uuid";
 import { Avatar } from "../../ui/Avatar";
 import { confetti } from "../../ui/confetti";
 import { BackIcon, CheckIcon } from "../../ui/icons";
-import { bouncy, snappy } from "../../ui/motion";
+import { bouncy, snappy, tf } from "../../ui/motion";
 import { Sheet } from "../../ui/Sheet";
 import { useToast } from "../../ui/Toast";
 import { largestRemainder } from "../../ui/useSprings";
@@ -405,7 +405,7 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
 
         <AnimatePresence mode="wait" initial={false}>
           {mode === "uneven" ? (
-            <motion.div key="uneven" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={snappy}>
+            <motion.div key="uneven" initial={{ opacity: 0, transform: tf(0, 10) }} animate={{ opacity: 1, transform: tf() }} exit={{ opacity: 0 }} transition={snappy}>
               {validTotal ? (
                 <UnevenSliders members={included} colorIndex={colorIndex} values={unevenVals} total={total} onSet={setPill} />
               ) : (
@@ -418,7 +418,7 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
               <PeopleToggles active={active} on={on} toggle={toggle} shake={shake} compact />
             </motion.div>
           ) : (
-            <motion.div key="equal" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={snappy}>
+            <motion.div key="equal" initial={{ opacity: 0, transform: tf(0, 10) }} animate={{ opacity: 1, transform: tf() }} exit={{ opacity: 0 }} transition={snappy}>
               <div className="relative">
                 <SplitRing
                   members={active}

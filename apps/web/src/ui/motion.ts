@@ -9,7 +9,18 @@ export const countUp = { type: "spring", stiffness: 110, damping: 22, restDelta:
 
 /** Staggered list entrance: 60ms apart, soft ease-out, 14px rise. */
 export const listItem = (i: number) => ({
-  initial: { opacity: 0, y: 14 },
-  animate: { opacity: 1, y: 0 },
+  initial: { opacity: 0, transform: tf(0, 14) },
+  animate: { opacity: 1, transform: tf() },
   transition: { duration: 0.5, ease: [0.2, 0.9, 0.2, 1] as const, delay: i * 0.06 },
 });
+
+/**
+ * A `transform` value for motion props. Motion only runs `transform` and `opacity` on the
+ * compositor; `x` / `y` / `scale` are stepped from JavaScript every frame, so they stutter and
+ * skip ahead on iPhone while React is busy building the next screen. Use this for anything that
+ * plays as a screen, sheet or list appears. Numbers are px; strings pass through ("100%").
+ */
+export const tf = (x: number | string = 0, y: number | string = 0, scale = 1) => {
+  const u = (v: number | string) => (typeof v === "number" ? `${v}px` : v);
+  return `translate3d(${u(x)}, ${u(y)}, 0px) scale(${scale})`;
+};

@@ -9,7 +9,7 @@ import { accentOr, isDark } from "../../lib/color";
 import { useCurrentTripId } from "../../lib/currentTrip";
 import { CATEGORIES, tileColor } from "../../lib/people";
 import { Amount } from "../../ui/Amount";
-import { bouncy, snappy } from "../../ui/motion";
+import { bouncy, snappy, tf } from "../../ui/motion";
 
 // Layout follows the approved Figma "Stats" screen: title + Wrapped pill, total, flower chart with
 // legend, and the dark daily-spend card.
@@ -192,7 +192,7 @@ function DailyCard({ stats, accent }: { stats: TripStats; accent: string }) {
             return (
               <div key={d.date} className={`flex flex-col items-center gap-1.5 ${many ? "w-[22px] shrink-0" : "min-w-0 flex-1"}`}>
                 {isPeak && (
-                  <motion.span initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ ...snappy, delay: 0.5 }} className="text-[10px] font-bold" style={{ color: lit }}>
+                  <motion.span initial={{ opacity: 0, transform: tf(0, 6) }} animate={{ opacity: 1, transform: tf() }} transition={{ ...snappy, delay: 0.5 }} className="text-[10px] font-bold" style={{ color: lit }}>
                     {kShort(d.paise)}
                   </motion.span>
                 )}

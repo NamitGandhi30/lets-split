@@ -56,8 +56,8 @@ export function JoinScreen() {
         <p className="text-[14px] text-dim">You're invited to</p>
         {p ? (
           <motion.div
-            initial={{ y: 30, rotate: -4, opacity: 0 }}
-            animate={{ y: 0, rotate: 0, opacity: 1 }}
+            initial={{ transform: "translate3d(0px, 30px, 0px) rotate(-4deg)", opacity: 0 }}
+            animate={{ transform: "translate3d(0px, 0px, 0px) rotate(0deg)", opacity: 1 }}
             transition={bouncy}
             className="mt-3 rounded-[24px] px-5 pt-5 pb-4 ring-1 ring-white/10"
             style={{ background: accentOr(p.accent), color: inkOn(p.accent) }}

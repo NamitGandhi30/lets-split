@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { NavLink, useLocation } from "react-router";
 import { HomeIcon, PlusIcon, StatsIcon } from "./icons";
-import { bouncy } from "./motion";
+import { bouncy, tf } from "./motion";
 
 const TABS = [
   { to: "/", label: "Home", Icon: HomeIcon },
@@ -23,7 +23,7 @@ export function TabBar() {
         aria-hidden="true"
         className="absolute top-1.5 left-1.5 h-[46px] w-[50px] rounded-full bg-on-dark"
         initial={false}
-        animate={{ x: idx * 55 }}
+        animate={{ transform: tf(idx * 55) }}
         transition={bouncy}
       />
       {TABS.map(({ to, label, Icon }, i) => (

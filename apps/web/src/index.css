@@ -87,7 +87,6 @@
   html,
   body {
     background: var(--screen-bg, var(--color-chrome));
-    transition: background-color 0.25s;
   }
   html {
     color-scheme: dark;

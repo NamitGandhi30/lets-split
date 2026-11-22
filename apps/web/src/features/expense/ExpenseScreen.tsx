@@ -12,7 +12,7 @@ import { newId } from "../../lib/uuid";
 import { Amount } from "../../ui/Amount";
 import { Avatar } from "../../ui/Avatar";
 import { BackIcon } from "../../ui/icons";
-import { snappy } from "../../ui/motion";
+import { snappy, tf } from "../../ui/motion";
 import { useToast } from "../../ui/Toast";
 
 const SPLIT_LABEL: Record<string, string> = {
@@ -186,7 +186,7 @@ export function ExpenseScreen() {
             </span>
           ))}
           {(comments.data ?? []).map((c) => (
-            <motion.span key={c.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={snappy}>
+            <motion.span key={c.id} initial={{ opacity: 0, transform: tf(0, 6) }} animate={{ opacity: 1, transform: tf() }} transition={snappy}>
               <b className="font-semibold text-ink">{c.authorName}</b> “{c.body}” · {ago(c.createdAt)}
             </motion.span>
           ))}

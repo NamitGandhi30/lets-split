@@ -31,6 +31,8 @@ export function installNativeShell() {
   window.addEventListener("orientationchange", () => setTimeout(size, 300));
   window.visualViewport?.addEventListener("resize", size);
 
+  startAnimationsWhenDrawn();
+
   // iOS-only pinch events; preventing them stops page zoom.
   const block = (e: Event) => e.preventDefault();
   document.addEventListener("gesturestart", block, { passive: false });
@@ -43,4 +45,32 @@ export function installNativeShell() {
     },
     { passive: false },
   );
+}
+
+/**
+ * Start GPU animations on the frame they're first drawn, not when JavaScript created them.
+ *
+ * Motion back-dates every compositor animation to the moment it was triggered. On an iPhone the
+ * new screen then spends a few hundred ms in effects, layout and paint before its first frame, so
+ * by the time anything is visible a spring is half over and the push, pop or sheet looks like it
+ * snapped into place. Left alone, the Web Animations API waits ("pending") and starts the clock on
+ * the frame the animation is actually committed, so screens animated together still start
+ * together. Only the back-dating of a not-yet-started animation is skipped; later seeks pass.
+ */
+function startAnimationsWhenDrawn() {
+  if (typeof Animation === "undefined") return;
+  const startTime = Object.getOwnPropertyDescriptor(Animation.prototype, "startTime");
+  if (!startTime?.get || !startTime.set || !("pending" in Animation.prototype)) return;
+  const nativeAnimate = Element.prototype.animate;
+  Element.prototype.animate = function (this: Element, ...args: Parameters<Element["animate"]>) {
+    const anim = nativeAnimate.apply(this, args);
+    Object.defineProperty(anim, "startTime", {
+      configurable: true,
+      get: () => startTime.get!.call(anim),
+      set: (v: CSSNumberish | null) => {
+        if (!anim.pending) startTime.set!.call(anim, v);
+      },
+    });
+    return anim;
+  };
 }

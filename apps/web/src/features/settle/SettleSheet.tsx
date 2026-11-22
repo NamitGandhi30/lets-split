@@ -10,7 +10,7 @@ import { newId } from "../../lib/uuid";
 import { Avatar } from "../../ui/Avatar";
 import { confetti } from "../../ui/confetti";
 import { CheckIcon, CopyIcon, DownloadIcon } from "../../ui/icons";
-import { bouncy, snappy } from "../../ui/motion";
+import { bouncy, snappy, tf } from "../../ui/motion";
 import { Qr, qrPng } from "../../ui/Qr";
 import { Sheet } from "../../ui/Sheet";
 import { useToast } from "../../ui/Toast";
@@ -111,7 +111,7 @@ function SettleBody({ group, map, target, onDone }: { group: Group; map: Map<str
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-center gap-3 pt-1">
         <Avatar seed={target.from} avatarKey={from?.avatarKey} size={44} />
-        <motion.span initial={{ x: -8, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={bouncy} className="text-[20px] text-muted">
+        <motion.span initial={{ transform: tf(-8), opacity: 0 }} animate={{ transform: tf(), opacity: 1 }} transition={bouncy} className="text-[20px] text-muted">
           →
         </motion.span>
         <Avatar seed={target.to} avatarKey={to?.avatarKey} size={44} />
@@ -133,7 +133,7 @@ function SettleBody({ group, map, target, onDone }: { group: Group; map: Map<str
 
       <AnimatePresence mode="wait" initial={false}>
         {step === "pay" ? (
-          <motion.div key="pay" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={snappy} className="flex flex-col gap-3">
+          <motion.div key="pay" initial={{ opacity: 0, transform: tf(0, 12) }} animate={{ opacity: 1, transform: tf() }} exit={{ opacity: 0, transform: tf(0, -8) }} transition={snappy} className="flex flex-col gap-3">
             {(iPay || iGet) && links ? (
               <div className="rounded-[var(--radius-card)] bg-card p-4">
                 <div className="flex gap-4">

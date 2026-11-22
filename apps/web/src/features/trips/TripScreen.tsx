@@ -13,7 +13,7 @@ import { dayLabel, firstName, nameOf } from "../../lib/people";
 import { Amount } from "../../ui/Amount";
 import { Avatar } from "../../ui/Avatar";
 import { BackIcon, MoreIcon, PlusIcon, UserPlusIcon } from "../../ui/icons";
-import { listItem, snappy } from "../../ui/motion";
+import { listItem, snappy, tf } from "../../ui/motion";
 import { Sheet } from "../../ui/Sheet";
 import { useToast } from "../../ui/Toast";
 import { ExpenseRow } from "../home/RecentSheet";
@@ -135,7 +135,7 @@ export function TripScreen() {
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div key={tab} initial={{ opacity: 0, x: tab === "bal" ? 24 : -24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={snappy}>
+        <motion.div key={tab} initial={{ opacity: 0, transform: tf(tab === "bal" ? 24 : -24) }} animate={{ opacity: 1, transform: tf() }} exit={{ opacity: 0 }} transition={snappy}>
           {tab === "exp" ? (
             expenses.isPending ? (
               <div className="mx-[18px] mt-4 h-40 animate-pulse rounded-[var(--radius-card)] bg-card" />

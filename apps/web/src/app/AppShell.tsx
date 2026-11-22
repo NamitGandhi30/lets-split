@@ -6,7 +6,7 @@ import { useMe } from "../api/hooks";
 import { useChangePings } from "../lib/realtime";
 import { useBack } from "../lib/useBack";
 import { CloudOffIcon } from "../ui/icons";
-import { snappy } from "../ui/motion";
+import { snappy, tf } from "../ui/motion";
 import { TabBar } from "../ui/TabBar";
 
 // Add expense has its own Save button where the tab bar would sit.
@@ -25,19 +25,19 @@ type Dir = { kind: "push" | "pop" | "tab" | "fade" | "up" | "down"; sign: number
 const PAGE: Transition = { type: "spring", stiffness: 320, damping: 36, restDelta: 0.5 };
 const variants = {
   initial: (d: Dir) =>
-    d.kind === "up" ? { y: "100%", opacity: 1, zIndex: 2 }
-    : d.kind === "down" ? { opacity: 1, zIndex: 1 }
-    : d.kind === "push" ? { x: "100%", opacity: 1, zIndex: 2 }
-    : d.kind === "pop" ? { x: "-28%", opacity: 0.6, zIndex: 1 }
-    : d.kind === "tab" ? { x: 28 * d.sign, opacity: 0, zIndex: 2 }
-    : { opacity: 0, zIndex: 2 },
-  animate: { x: 0, y: 0, opacity: 1, transition: { x: PAGE, y: PAGE, opacity: { duration: 0.25 } } },
+    d.kind === "up" ? { transform: tf(0, "100%"), opacity: 1, zIndex: 2 }
+    : d.kind === "down" ? { transform: tf(), opacity: 1, zIndex: 1 }
+    : d.kind === "push" ? { transform: tf("100%"), opacity: 1, zIndex: 2 }
+    : d.kind === "pop" ? { transform: tf("-28%"), opacity: 0.6, zIndex: 1 }
+    : d.kind === "tab" ? { transform: tf(28 * d.sign), opacity: 0, zIndex: 2 }
+    : { transform: tf(), opacity: 0, zIndex: 2 },
+  animate: { transform: tf(), opacity: 1, transition: { transform: PAGE, opacity: { duration: 0.25 } } },
   exit: (d: Dir) =>
     d.kind === "up" ? { opacity: 0.6, zIndex: 1, transition: { duration: 0.3 } }
-    : d.kind === "down" ? { y: "100%", zIndex: 2, transition: { y: PAGE } }
-    : d.kind === "push" ? { x: "-28%", opacity: 0.6, zIndex: 1, transition: { x: PAGE, opacity: { duration: 0.3 } } }
-    : d.kind === "pop" ? { x: "100%", opacity: 1, zIndex: 2, transition: { x: PAGE } }
-    : d.kind === "tab" ? { x: -28 * d.sign, opacity: 0, zIndex: 1, transition: { duration: 0.18 } }
+    : d.kind === "down" ? { transform: tf(0, "100%"), zIndex: 2, transition: { transform: PAGE } }
+    : d.kind === "push" ? { transform: tf("-28%"), opacity: 0.6, zIndex: 1, transition: { transform: PAGE, opacity: { duration: 0.3 } } }
+    : d.kind === "pop" ? { transform: tf("100%"), opacity: 1, zIndex: 2, transition: { transform: PAGE } }
+    : d.kind === "tab" ? { transform: tf(-28 * d.sign), opacity: 0, zIndex: 1, transition: { duration: 0.18 } }
     : { opacity: 0, zIndex: 1, transition: { duration: 0.15 } },
 };
 
@@ -135,11 +135,11 @@ export function AppShell() {
         {!online && (
           <motion.div
             role="status"
-            initial={{ y: -40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -40, opacity: 0 }}
+            initial={{ transform: tf("-50%", -40), opacity: 0 }}
+            animate={{ transform: tf("-50%", 0), opacity: 1 }}
+            exit={{ transform: tf("-50%", -40), opacity: 0 }}
             transition={snappy}
-            className="pointer-events-none fixed top-[calc(env(safe-area-inset-top,0px)+8px)] left-1/2 z-[55] flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-ink/90 px-3 py-1.5 text-[12px] font-semibold text-white ring-1 ring-white/10 backdrop-blur"
+            className="pointer-events-none fixed top-[calc(env(safe-area-inset-top,0px)+8px)] left-1/2 z-[55] flex items-center gap-1.5 rounded-full bg-ink/90 px-3 py-1.5 text-[12px] font-semibold text-white ring-1 ring-white/10 backdrop-blur"
           >
             <CloudOffIcon />
             {queued ? `Offline · ${queued} to sync` : "Offline · showing saved data"}

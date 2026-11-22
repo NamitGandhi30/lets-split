@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
-import { snappy } from "../../ui/motion";
+import { snappy, tf } from "../../ui/motion";
 
 /** The split-ring mark from the app icon. */
 export function Mark({ size = 36 }: { size?: number }) {
@@ -51,8 +51,8 @@ export function AuthLayout({ eyebrow, title, sub, children }: { eyebrow: ReactNo
         </div>
       </div>
       <motion.div
-        initial={{ y: 80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        initial={{ transform: tf(0, 80), opacity: 0 }}
+        animate={{ transform: tf(), opacity: 1 }}
         transition={{ ...snappy, delay: 0.15 }}
         className="rounded-t-[var(--radius-sheet)] bg-sheet px-5 pt-6 pb-[max(24px,env(safe-area-inset-bottom))] text-ink shadow-[0_-12px_30px_rgba(0,0,0,.35)]"
       >

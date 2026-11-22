@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
-import { snappy } from "./motion";
+import { snappy, tf } from "./motion";
 
 type Action = { label: string; onClick: () => void };
 type Show = (msg: string, action?: Action, ms?: number) => void;
@@ -25,9 +25,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <motion.div
               key={msg.id}
               role="status"
-              initial={{ opacity: 0, y: 16, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              initial={{ opacity: 0, transform: tf(0, 16, 0.96) }}
+              animate={{ opacity: 1, transform: tf() }}
+              exit={{ opacity: 0, transform: tf(0, 8, 0.98) }}
               transition={snappy}
               className="pointer-events-auto flex items-center gap-3 rounded-full bg-ink py-2.5 pr-2.5 pl-4 text-[13.5px] font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,.35)] ring-1 ring-white/10"
               style={msg.action ? undefined : { paddingRight: 16 }}
