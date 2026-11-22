@@ -317,7 +317,7 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
           <span className={`text-[26px] ${validTotal ? "" : "text-ink/30"}`}>₹</span>
           <input
             ref={amountRef}
-            autoFocus={!existing}
+            data-autofocus={existing ? undefined : true}
             inputMode="decimal"
             enterKeyHint="next"
             onKeyDown={(e) => e.key === "Enter" && nameRef.current?.focus()}

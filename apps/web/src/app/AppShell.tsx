@@ -1,9 +1,10 @@
 import { useIsMutating, useIsRestoring } from "@tanstack/react-query";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, type Transition } from "motion/react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Navigate, useLocation, useNavigationType, useOutlet } from "react-router";
 import { useMe } from "../api/hooks";
 import { useChangePings } from "../lib/realtime";
+import { handKeyboardTo, holdKeyboard } from "../lib/keyboard";
 import { useBack } from "../lib/useBack";
 import { CloudOffIcon } from "../ui/icons";
 import { snappy, tf } from "../ui/motion";
@@ -109,6 +110,17 @@ export function AppShell() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", bg);
   }, [loc.pathname]);
 
+  // A page's data-autofocus field gets focus once the page has slid in (see lib/keyboard); the
+  // keyboard comes up now, while we're still inside the tap that navigated here.
+  const autofocusTarget = (path: string) =>
+    document.querySelector<HTMLElement>(`main[data-page="${CSS.escape(path)}"] [data-autofocus]`);
+  useLayoutEffect(() => {
+    const t = autofocusTarget(loc.pathname);
+    if (!t) return;
+    if (reduce) t.focus({ preventScroll: true });
+    else holdKeyboard();
+  }, [loc.pathname, reduce]);
+
   // First run: name, avatar and UPI before anything else (an invite link resumes afterwards).
   if (me.data && !me.data.onboarded && loc.pathname !== "/welcome") {
     return <Navigate to={`/welcome?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />;
@@ -119,6 +131,8 @@ export function AppShell() {
       <AnimatePresence mode="popLayout" initial={false} custom={reduce ? { kind: "fade", sign: 1 } : dir}>
         <motion.main
           key={loc.pathname}
+          data-page={loc.pathname}
+          onAnimationComplete={(def) => def === "animate" && handKeyboardTo(autofocusTarget(loc.pathname))}
           custom={reduce ? { kind: "fade", sign: 1 } : dir}
           variants={variants}
           initial="initial"

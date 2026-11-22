@@ -1,6 +1,7 @@
 import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useReducedMotion, useTransform, type PanInfo } from "motion/react";
 import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { holdKeyboard, handKeyboardTo } from "../lib/keyboard";
 import { snappy, tf } from "./motion";
 
 interface SheetProps {
@@ -18,7 +19,7 @@ interface SheetProps {
  *
  * A field marked `data-autofocus` gets focus once the sheet has slid up. Focusing it while the
  * sheet is still below the screen makes iOS scroll the page down to it (a black half-screen),
- * so the keyboard is raised from an on-screen stand-in field during the tap, then handed over.
+ * so the keyboard is raised from an on-screen stand-in field during the tap (lib/keyboard).
  */
 export function Sheet({ open, onClose, title, children, tone = "light" }: SheetProps) {
   return createPortal(
@@ -34,7 +35,6 @@ function SheetBody({ onClose, title, children, tone }: Omit<SheetProps, "open">)
   const panel = useRef<HTMLDivElement>(null);
   const scrim = useTransform(y, [0, 400], [1, 0]);
   const labelId = useId();
-  const proxy = useRef<HTMLInputElement>(null);
   const prev = useRef<HTMLElement | null>(null);
   const target = () => panel.current?.querySelector<HTMLElement>("[data-autofocus]") ?? null;
 
@@ -44,11 +44,11 @@ function SheetBody({ onClose, title, children, tone }: Omit<SheetProps, "open">)
     const t = target();
     if (!t) panel.current?.focus({ preventScroll: true });
     else if (reduce) t.focus({ preventScroll: true });
-    else proxy.current?.focus({ preventScroll: true });
+    else holdKeyboard();
   }, [reduce]);
 
   const onOpened = () => {
-    if (document.activeElement === proxy.current) target()?.focus({ preventScroll: true });
+    handKeyboardTo(target());
   };
 
   useEffect(() => {
@@ -69,12 +69,6 @@ function SheetBody({ onClose, title, children, tone }: Omit<SheetProps, "open">)
   const light = tone === "light";
   return (
     <div className="absolute inset-0 z-50">
-      <input
-        ref={proxy}
-        aria-hidden="true"
-        tabIndex={-1}
-        className="pointer-events-none absolute top-0 left-0 h-px w-px opacity-0 text-[16px]"
-      />
       {/* Outer layer follows a drag; the inner one plays the fade on the compositor. */}
       <motion.div className="absolute inset-0" style={{ opacity: scrim }} onClick={onClose}>
         <motion.div
