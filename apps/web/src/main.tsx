@@ -5,10 +5,10 @@ import { MotionConfig } from "motion/react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
-import { registerSW } from "virtual:pwa-register";
 import { ApiError } from "./api/client";
 import { registerMutations } from "./api/mutations";
 import { router } from "./app/router";
+import { keepUpToDate } from "./lib/updates";
 import { SessionProvider } from "./features/auth/session";
 import "./index.css";
 import { ToastProvider } from "./ui/Toast";
@@ -36,21 +36,7 @@ const persister = createSyncStoragePersister({
   throttleTime: 1000,
 });
 
-// The installed iPhone app rarely reloads, so look for a new version whenever it comes back to the
-// foreground (and hourly). autoUpdate then swaps in the new build and reloads.
-if (import.meta.env.PROD) {
-  registerSW({
-    immediate: true,
-    onRegisteredSW(_url, reg) {
-      if (!reg) return;
-      const check = () => {
-        if (navigator.onLine) reg.update().catch(() => {});
-      };
-      document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && check());
-      setInterval(check, 60 * 60_000);
-    },
-  });
-}
+if (import.meta.env.PROD) keepUpToDate();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

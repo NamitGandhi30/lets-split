@@ -1,7 +1,21 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig, loadEnv } from "vite";
+import { writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+
+// A fresh id for every build. The app compares it with /version.json (never cached) to notice
+// when the installed iPhone app is running an old build.
+const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) || Date.now().toString(36);
+
+const versionFile = (): Plugin => ({
+  name: "lets-split-version",
+  apply: "build",
+  writeBundle(opts) {
+    writeFileSync(resolve(opts.dir ?? "dist", "version.json"), JSON.stringify({ build: BUILD_ID }));
+  },
+});
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -9,7 +23,9 @@ export default defineConfig(({ mode }) => {
   const apiDev = env.API_DEV_URL ?? "http://127.0.0.1:8787";
 
   return {
+    define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
     plugins: [
+      versionFile(),
       react(),
       tailwindcss(),
       VitePWA({

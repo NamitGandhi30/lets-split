@@ -49,9 +49,15 @@
 
 @layer base {
   html,
-  body,
-  #root {
+  body {
     height: 100%;
+  }
+  /* Fill the whole screen in the installed app, including under the status bar and home
+     indicator, so no page background shows as a band. */
+  #root {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
   }
   html {
     background: var(--color-chrome);

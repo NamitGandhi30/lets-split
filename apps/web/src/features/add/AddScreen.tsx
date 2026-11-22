@@ -514,7 +514,7 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
           transition={snappy}
           onClick={save}
           aria-disabled={!canSave}
-          className="h-14 w-full rounded-full bg-ink text-[15px] font-semibold text-white transition-opacity aria-disabled:opacity-60"
+          className="h-14 w-full rounded-full bg-ink text-[15px] font-semibold text-white transition-colors aria-disabled:bg-[#8E929C]"
         >
           {cta}
         </motion.button>
