@@ -1,4 +1,5 @@
 import { formatINR } from "@lets-split/core";
+import { accentOr, inkOn } from "../../lib/color";
 import { motion } from "motion/react";
 import { useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -93,7 +94,7 @@ export function ExpenseScreen() {
           <button type="button" onClick={() => nav(-1)} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-card">
             <BackIcon />
           </button>
-          <Link to={`/trips/${e.groupId}`} className="flex h-[30px] items-center self-center rounded-full px-3 text-[13px] font-semibold" style={{ background: group.data?.accent ?? "#F4D23C" }}>
+          <Link to={`/trips/${e.groupId}`} className="flex h-[30px] items-center self-center rounded-full px-3 text-[13px] font-semibold" style={{ background: accentOr(group.data?.accent), color: inkOn(group.data?.accent) }}>
             {group.data?.name ?? "Trip"}
           </Link>
         </div>

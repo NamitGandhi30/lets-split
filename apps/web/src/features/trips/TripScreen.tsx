@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import type { Expense, Member } from "../../api/client";
 import { useAllExpenses, useBalances, useGroup, useMembers, useSettlements } from "../../api/hooks";
 import { useWrite, withKey } from "../../api/mutations";
+import { accentOr, inkOn, isDark } from "../../lib/color";
 import { dayLabel, firstName, nameOf } from "../../lib/people";
 import { Amount } from "../../ui/Amount";
 import { Avatar } from "../../ui/Avatar";
@@ -45,7 +46,8 @@ export function TripScreen() {
 
   const memberMap = useMemo(() => new Map((members.data ?? []).map((m) => [m.id, m])), [members.data]);
   const g = group.data;
-  const accent = g?.accent ?? "#F4D23C";
+  const accent = accentOr(g?.accent);
+  const darkHero = isDark(accent);
 
   useEffect(() => {
     if (group.isError) nav("/", { replace: true });
@@ -68,19 +70,19 @@ export function TripScreen() {
 
   return (
     <div className="no-scrollbar h-full overflow-y-auto bg-sheet text-ink">
-      <div className="px-5 pt-[calc(env(safe-area-inset-top,0px)+12px)] pb-5 transition-colors duration-500" style={{ background: accent }}>
+      <div className="px-5 pt-[calc(env(safe-area-inset-top,0px)+12px)] pb-5 transition-colors duration-500" style={{ background: accent, color: inkOn(accent) }}>
         <div className="flex items-center justify-between">
-          <Link to="/" aria-label="Back to home" className="grid h-10 w-10 place-items-center rounded-full bg-card">
+          <Link to="/" aria-label="Back to home" className="grid h-10 w-10 place-items-center rounded-full bg-card text-ink">
             <BackIcon />
           </Link>
           <div className="flex gap-2">
-            <button type="button" aria-label="Invite people" onClick={() => setInvite(true)} className="grid h-10 w-10 place-items-center rounded-full bg-card">
+            <button type="button" aria-label="Invite people" onClick={() => setInvite(true)} className="grid h-10 w-10 place-items-center rounded-full bg-card text-ink">
               <UserPlusIcon />
             </button>
-            <button type="button" aria-label="Trip options" onClick={() => setMenu(true)} className="grid h-10 w-10 place-items-center rounded-full bg-card">
+            <button type="button" aria-label="Trip options" onClick={() => setMenu(true)} className="grid h-10 w-10 place-items-center rounded-full bg-card text-ink">
               <MoreIcon />
             </button>
-            <Link to={`/add?group=${groupId}`} aria-label="Add expense" className="grid h-10 w-10 place-items-center rounded-full bg-card">
+            <Link to={`/add?group=${groupId}`} aria-label="Add expense" className="grid h-10 w-10 place-items-center rounded-full bg-card text-ink">
               <PlusIcon />
             </Link>
           </div>
@@ -93,16 +95,16 @@ export function TripScreen() {
           {active.slice(0, 8).map((m) => (
             <Avatar key={m.id} seed={m.id} avatarKey={m.avatarKey} size={34} className={`-mr-2 border-2 border-white ${m.isPlaceholder ? "opacity-60" : ""}`} />
           ))}
-          <span className="ml-3 flex h-[34px] items-center gap-1.5 rounded-full bg-card px-3 text-[13px] font-semibold">
+          <span className="ml-3 flex h-[34px] items-center gap-1.5 rounded-full bg-card px-3 text-[13px] font-semibold text-ink">
             <UserPlusIcon width={15} height={15} /> Add people
           </span>
         </button>
         <div className="mt-4 flex gap-2.5">
-          <div className="flex-1 rounded-[18px] bg-white/45 p-3">
+          <div className={`flex-1 rounded-[18px] p-3 ${darkHero ? "bg-white/12" : "bg-white/45"}`}>
             <span className="block text-[11px] font-semibold opacity-70">TOTAL SPENT</span>
             <Amount paise={g?.totalSpentPaise ?? 0} size={{ cur: 15, whole: 20, dec: 13 }} />
           </div>
-          <div className="flex-1 rounded-[18px] bg-white/45 p-3">
+          <div className={`flex-1 rounded-[18px] p-3 ${darkHero ? "bg-white/12" : "bg-white/45"}`}>
             <span className="block text-[11px] font-semibold opacity-70">{net < 0 ? "YOU OWE" : net > 0 ? "YOU'RE OWED" : "ALL SQUARE"}</span>
             <Amount paise={net} absolute size={{ cur: 15, whole: 20, dec: 13 }} />
           </div>

@@ -1,10 +1,11 @@
 import { motion } from "motion/react";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import type { Group } from "../../api/client";
 import { useWrite, withKey } from "../../api/mutations";
-import { ACCENT_CHOICES } from "../../lib/people";
+import { ACCENT_SWATCHES, DEFAULT_ACCENT, inkOn } from "../../lib/color";
 import { newId } from "../../lib/uuid";
+import { DateField } from "../../ui/DateField";
 import { CheckIcon } from "../../ui/icons";
 import { bouncy, snappy } from "../../ui/motion";
 import { Sheet } from "../../ui/Sheet";
@@ -29,15 +30,24 @@ function TripForm({ group, onDone }: { group?: Group; onDone: () => void }) {
   const create = useWrite("createGroup");
   const update = useWrite("updateGroup");
   const [name, setName] = useState(group?.name ?? "");
-  const [accent, setAccent] = useState<string>(group?.accent ?? ACCENT_CHOICES[0].hex);
+  const [accent, setAccent] = useState<string>(group?.accent ?? DEFAULT_ACCENT);
   const [location, setLocation] = useState(group?.location ?? "");
   const [startsOn, setStartsOn] = useState(group?.startsOn ?? "");
   const [endsOn, setEndsOn] = useState(group?.endsOn ?? "");
   const badDates = Boolean(startsOn && endsOn && endsOn < startsOn);
+  const [nudge, setNudge] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const custom = !ACCENT_SWATCHES.some((c) => c.toLowerCase() === accent.toLowerCase());
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim() || badDates) return;
+    if (!name.trim()) {
+      setNudge(true);
+      nameRef.current?.focus();
+      setTimeout(() => setNudge(false), 900);
+      return;
+    }
+    if (badDates) return;
     if (group) {
       update.mutate(
         withKey({
@@ -69,54 +79,87 @@ function TripForm({ group, onDone }: { group?: Group; onDone: () => void }) {
   const busy = create.isPending && !create.isPaused;
   return (
     <form onSubmit={submit} className="flex flex-col gap-4 pt-1">
-      <label>
+      <motion.label animate={nudge ? { x: [0, -8, 8, -4, 0] } : { x: 0 }} transition={{ duration: 0.4 }}>
         <span className={labelCls}>NAME</span>
-        <input autoFocus={!group} className={fieldCls} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} placeholder="Goa '26" />
-      </label>
+        <input
+          ref={nameRef}
+          autoFocus={!group}
+          className={`${fieldCls} ${nudge ? "ring-2 ring-neg" : ""}`}
+          value={name}
+          maxLength={60}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Trip name"
+        />
+      </motion.label>
 
       <div>
         <span className={labelCls}>COLOUR</span>
-        <div className="flex gap-2.5" role="radiogroup" aria-label="Trip colour">
-          {ACCENT_CHOICES.map((a) => {
-            const on = accent === a.hex;
+        <div className="flex items-center gap-3 rounded-[18px] bg-card px-4 py-3.5 ring-1 ring-black/5">
+          <motion.span
+            key={accent}
+            initial={{ scale: 0.85 }}
+            animate={{ scale: 1 }}
+            transition={bouncy}
+            className="flex h-11 min-w-0 flex-1 items-center truncate rounded-[12px] px-3 text-[14px] font-bold"
+            style={{ background: accent, color: inkOn(accent) }}
+          >
+            {name.trim() || "Your trip"}
+          </motion.span>
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center gap-2.5 px-1" role="radiogroup" aria-label="Trip colour">
+          {ACCENT_SWATCHES.map((hex) => {
+            const on = accent.toLowerCase() === hex.toLowerCase();
             return (
               <motion.button
-                key={a.hex}
+                key={hex}
                 type="button"
                 role="radio"
                 aria-checked={on}
-                whileTap={{ scale: 0.94 }}
+                aria-label={hex === DEFAULT_ACCENT ? "Black" : hex}
+                whileTap={{ scale: 0.88 }}
                 transition={snappy}
-                onClick={() => setAccent(a.hex)}
-                className={`relative flex h-[64px] flex-1 flex-col justify-end rounded-[18px] px-3 pb-2 text-left text-[13px] font-bold text-ink ring-offset-2 ring-offset-sheet ${on ? "ring-2 ring-ink" : ""}`}
-                style={{ background: a.hex }}
+                onClick={() => setAccent(hex)}
+                className={`grid h-9 w-9 place-items-center rounded-full ring-offset-2 ring-offset-sheet ${on ? "ring-2 ring-ink" : "ring-1 ring-black/10"}`}
+                style={{ background: hex, color: inkOn(hex) }}
               >
-                {a.name}
                 {on && (
-                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={bouncy} className="absolute top-2 right-2 grid h-5 w-5 place-items-center rounded-full bg-ink text-white">
-                    <CheckIcon width={11} height={11} />
+                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={bouncy}>
+                    <CheckIcon width={14} height={14} />
                   </motion.span>
                 )}
               </motion.button>
             );
           })}
+          <label
+            className={`relative grid h-9 w-9 cursor-pointer place-items-center overflow-hidden rounded-full ring-offset-2 ring-offset-sheet ${custom ? "ring-2 ring-ink" : "ring-1 ring-black/10"}`}
+            style={{ background: custom ? accent : "conic-gradient(#ff5a5a, #ffd23c, #3fd0b6, #5c8dff, #c45cff, #ff5a5a)" }}
+            title="Pick any colour"
+          >
+            <span className="sr-only">Pick any colour</span>
+            {custom ? (
+              <CheckIcon width={14} height={14} style={{ color: inkOn(accent) }} />
+            ) : (
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-[14px] font-bold text-ink">+</span>
+            )}
+            <input type="color" value={accent} onChange={(e) => setAccent(e.target.value.toUpperCase())} className="absolute inset-0 cursor-pointer opacity-0" />
+          </label>
         </div>
       </div>
 
       <label>
-        <span className={labelCls}>WHERE</span>
-        <input className={fieldCls} value={location} maxLength={80} onChange={(e) => setLocation(e.target.value)} placeholder="North Goa" />
+        <span className={labelCls}>WHERE (OPTIONAL)</span>
+        <input className={fieldCls} value={location} maxLength={80} onChange={(e) => setLocation(e.target.value)} placeholder="Where to?" />
       </label>
 
       <div className="flex gap-2.5">
-        <label className="flex-1">
+        <div className="min-w-0 flex-1">
           <span className={labelCls}>FROM</span>
-          <input type="date" className={fieldCls} value={startsOn} onChange={(e) => setStartsOn(e.target.value)} />
-        </label>
-        <label className="flex-1">
+          <DateField label="Start date" value={startsOn} onChange={setStartsOn} />
+        </div>
+        <div className="min-w-0 flex-1">
           <span className={labelCls}>TO</span>
-          <input type="date" className={fieldCls} value={endsOn} min={startsOn || undefined} onChange={(e) => setEndsOn(e.target.value)} />
-        </label>
+          <DateField label="End date" value={endsOn} min={startsOn || undefined} onChange={setEndsOn} align="right" />
+        </div>
       </div>
       {badDates && <p className="-mt-2 px-1 text-[13px] font-medium text-neg">The trip can't end before it starts.</p>}
 
@@ -124,7 +167,7 @@ function TripForm({ group, onDone }: { group?: Group; onDone: () => void }) {
         type="submit"
         whileTap={{ scale: 0.97 }}
         transition={snappy}
-        disabled={!name.trim() || badDates || busy}
+        disabled={badDates || busy}
         className="mt-1 h-[56px] rounded-full bg-ink text-[15px] font-semibold text-white disabled:opacity-40"
       >
         {group ? "Save changes" : busy ? "Creating…" : "Create trip"}

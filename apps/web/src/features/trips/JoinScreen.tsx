@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { accentOr, inkOn } from "../../lib/color";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { ApiError } from "../../api/client";
@@ -58,8 +59,8 @@ export function JoinScreen() {
             initial={{ y: 30, rotate: -4, opacity: 0 }}
             animate={{ y: 0, rotate: 0, opacity: 1 }}
             transition={bouncy}
-            className="mt-3 rounded-[24px] px-5 pt-5 pb-4 text-ink"
-            style={{ background: p.accent ?? "#F4D23C" }}
+            className="mt-3 rounded-[24px] px-5 pt-5 pb-4 ring-1 ring-white/10"
+            style={{ background: accentOr(p.accent), color: inkOn(p.accent) }}
           >
             <b className="block text-[30px] leading-[1.05] font-extrabold tracking-[-0.02em]">{p.name}</b>
             <span className="mt-1 block text-[13px] opacity-75">

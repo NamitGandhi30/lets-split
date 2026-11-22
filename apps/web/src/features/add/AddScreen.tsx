@@ -1,4 +1,5 @@
 import { computeExpense, formatINR, inrParts, type SplitSpec } from "@lets-split/core";
+import { accentOr, inkOn } from "../../lib/color";
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
@@ -302,7 +303,7 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
           transition={snappy}
           onClick={() => !existing && setSheet("trip")}
           className="flex h-[30px] max-w-[130px] items-center truncate rounded-full px-3 text-[13px] font-semibold"
-          style={{ background: group.accent ?? "#F4D23C" }}
+          style={{ background: accentOr(group.accent), color: inkOn(group.accent) }}
         >
           <span className="truncate">{group.name}</span>
         </motion.button>
@@ -528,7 +529,7 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
                 nav(`/add?group=${g.id}`, { replace: true });
               }}
               className="flex h-14 items-center justify-between rounded-[16px] px-4 text-[15px] font-semibold"
-              style={{ background: g.accent ?? "#F4D23C" }}
+              style={{ background: accentOr(g.accent), color: inkOn(g.accent) }}
             >
               {g.name}
               {g.id === group.id && <CheckIcon width={16} height={16} />}

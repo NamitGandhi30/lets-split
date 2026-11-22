@@ -1,4 +1,5 @@
 import { buildUpiAppLinks, formatINR, inrParts, isValidVpa } from "@lets-split/core";
+import { accentOr } from "../../lib/color";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
@@ -136,7 +137,7 @@ function SettleBody({ group, map, target, onDone }: { group: Group; map: Map<str
             {(iPay || iGet) && links ? (
               <div className="rounded-[var(--radius-card)] bg-card p-4">
                 <div className="flex gap-4">
-                  <div className="shrink-0 rounded-[14px] p-1.5" style={{ background: group.accent ?? "#F4D23C" }}>
+                  <div className="shrink-0 rounded-[14px] p-1.5" style={{ background: accentOr(group.accent) }}>
                     <div className="rounded-[10px] bg-white p-1">
                       <Qr value={links.upi} size={116} />
                     </div>

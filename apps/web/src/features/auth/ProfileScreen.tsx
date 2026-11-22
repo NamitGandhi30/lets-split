@@ -1,4 +1,5 @@
 import { isValidVpa } from "@lets-split/core";
+import { accentOr } from "../../lib/color";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
@@ -146,7 +147,7 @@ export function ProfileScreen() {
           <div className="rounded-[var(--radius-card)] bg-card px-4 py-1">
             {archived.map((g) => (
               <Link key={g.id} to={`/trips/${g.id}`} className="flex items-center gap-3 border-b border-hairline py-3 last:border-b-0">
-                <span className="h-3 w-3 rounded-full" style={{ background: g.accent ?? "#F4D23C" }} />
+                <span className="h-3 w-3 rounded-full" style={{ background: accentOr(g.accent) }} />
                 <span className="flex-1 text-[14px] font-semibold">{g.name}</span>
                 <ChevronIcon className="text-muted" />
               </Link>

@@ -1,11 +1,11 @@
 import { formatINR } from "@lets-split/core";
+import { accentOr, inkOn } from "../../lib/color";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import type { Group } from "../../api/client";
 import { bouncy } from "../../ui/motion";
 
-export const ACCENTS = ["#F4D23C", "#3FD0B6", "#5C8DFF"] as const;
-export const accentOf = (g: Group, i: number) => g.accent ?? ACCENTS[i % ACCENTS.length]!;
+export const accentOf = (g: Group, _i?: number) => accentOr(g.accent);
 
 function meta(g: Group): string {
   const people = `${g.memberCount} ${g.memberCount === 1 ? "person" : "people"}`;
@@ -71,8 +71,8 @@ export function TripStack({ groups, onChange }: { groups: Group[]; onChange: (g:
         return (
           <motion.div
             key={id}
-            className="absolute inset-0 flex origin-right items-center justify-between rounded-[20px] px-[18px] text-ink"
-            style={{ background: accentOf(g, i), zIndex: 3 - k }}
+            className="absolute inset-0 flex origin-right items-center justify-between rounded-[20px] px-[18px] ring-1 ring-white/10"
+            style={{ background: accentOf(g, i), color: inkOn(g.accent), zIndex: 3 - k }}
             initial={false}
             animate={
               isFlying

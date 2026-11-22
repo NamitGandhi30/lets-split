@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { accentOr } from "../../lib/color";
 import { useState, type FormEvent } from "react";
 import type { Group, Member } from "../../api/client";
 import { useWrite, withKey } from "../../api/mutations";
@@ -54,7 +55,7 @@ function InviteBody({ group, members }: { group: Group; members: Member[] }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col items-center rounded-[var(--radius-card)] bg-card px-4 pt-5 pb-4">
-        <div className="rounded-[18px] p-2.5" style={{ background: group.accent ?? "#F4D23C" }}>
+        <div className="rounded-[18px] p-2.5" style={{ background: accentOr(group.accent) }}>
           <div className="rounded-[12px] bg-white p-1.5">
             <Qr value={url} size={176} />
           </div>

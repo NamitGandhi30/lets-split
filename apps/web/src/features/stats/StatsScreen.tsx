@@ -1,4 +1,5 @@
 import { formatINR } from "@lets-split/core";
+import { inkOn } from "../../lib/color";
 import { useGroups } from "../../api/hooks";
 import { accentOf } from "../home/TripStack";
 
@@ -8,7 +9,7 @@ export function StatsScreen() {
   const trip = groups.data?.[0];
   return (
     <div className="no-scrollbar h-full overflow-y-auto bg-sheet text-ink">
-      <div className="px-5 pt-[calc(env(safe-area-inset-top,0px)+18px)] pb-[22px]" style={{ background: trip ? accentOf(trip, 0) : "#E5E6EA" }}>
+      <div className="px-5 pt-[calc(env(safe-area-inset-top,0px)+18px)] pb-[22px]" style={{ background: trip ? accentOf(trip, 0) : "#E5E6EA", color: trip ? inkOn(trip.accent) : undefined }}>
         <p className="text-[12px] font-semibold tracking-[0.06em] opacity-75">TRIP STATS</p>
         <h1 className="mt-1.5 text-[34px] font-extrabold tracking-[-0.02em]">{trip?.name ?? "No trip yet"}</h1>
         <div className="mt-4 flex gap-2.5">
