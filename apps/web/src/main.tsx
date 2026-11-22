@@ -6,7 +6,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
 import { ApiError } from "./api/client";
-import { registerMutations } from "./api/mutations";
+import { registerMutations, resumeQueuedWrites, useWriteFailures } from "./api/mutations";
 import { router } from "./app/router";
 import { installNativeShell } from "./lib/appShell";
 import { keepUpToDate } from "./lib/updates";
@@ -37,6 +37,11 @@ const persister = createSyncStoragePersister({
   throttleTime: 1000,
 });
 
+function WriteFailures() {
+  useWriteFailures();
+  return null;
+}
+
 installNativeShell();
 if (import.meta.env.PROD) keepUpToDate();
 
@@ -49,12 +54,18 @@ createRoot(document.getElementById("root")!).render(
           persister,
           maxAge: 7 * 24 * 60 * 60_000,
           buster: "2",
-          dehydrateOptions: { shouldDehydrateMutation: (m) => m.state.isPaused || m.state.status === "pending" },
+          dehydrateOptions: {
+            shouldDehydrateMutation: (m) => m.state.isPaused || m.state.status === "pending",
+            // Keep anything already on the phone. A refresh that fails on weak signal marks a query as
+            // "error" but leaves its data in place; the default (success only) would forget it at the next launch.
+            shouldDehydrateQuery: (q) => q.state.data !== undefined,
+          },
         }}
-        onSuccess={() => queryClient.resumePausedMutations()}
+        onSuccess={() => resumeQueuedWrites(queryClient)}
       >
         <SessionProvider>
           <ToastProvider>
+            <WriteFailures />
             <RouterProvider router={router} />
           </ToastProvider>
         </SessionProvider>

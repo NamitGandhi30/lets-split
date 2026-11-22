@@ -47,7 +47,7 @@ function InviteBody({ group, members }: { group: Group; members: Member[] }) {
     e.preventDefault();
     const n = name.trim();
     if (!n) return;
-    add.mutate(withKey({ groupId: group.id, displayName: n }), { onError: (err) => toast(err.message) });
+    add.mutate(withKey({ groupId: group.id, displayName: n }));
     setName("");
     toast(`${n} added. They can claim their spot from the link.`);
   }

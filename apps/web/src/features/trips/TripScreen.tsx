@@ -2,7 +2,7 @@ import { formatINR } from "@lets-split/core";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
-import type { Expense, Member } from "../../api/client";
+import { ApiError, type Expense, type Member } from "../../api/client";
 import { useAllExpenses, useBalances, useGroup, useMembers, useSettlements } from "../../api/hooks";
 import { useWrite, withKey } from "../../api/mutations";
 import { useBack } from "../../lib/useBack";
@@ -56,8 +56,9 @@ export function TripScreen() {
   const darkHero = isDark(accent);
 
   useEffect(() => {
-    if (group.isError) nav("/", { replace: true });
-  }, [group.isError, nav]);
+    // Leave only when the server says the trip is gone (or you're no longer in it), not on a weak signal.
+    if (group.error instanceof ApiError) nav("/", { replace: true });
+  }, [group.error, nav]);
 
   const items = expenses.data?.pages.flatMap((p) => p.items) ?? [];
   const days = useMemo(() => {

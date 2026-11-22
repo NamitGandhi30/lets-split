@@ -67,7 +67,6 @@ function SettleBody({ group, map, target, onDone }: { group: Group; map: Map<str
     if (!validAmount) return;
     record.mutate(
       withKey({ groupId: group.id, body: { id: settlementId, fromMemberId: target.from, toMemberId: target.to, amountPaise: paise, method } }),
-      { onError: (e) => toast(e.message) },
     );
     confetti();
     onDone();

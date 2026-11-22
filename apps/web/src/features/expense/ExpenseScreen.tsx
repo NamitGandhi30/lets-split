@@ -41,7 +41,8 @@ export function ExpenseScreen() {
   const [body, setBody] = useState("");
   const map = useMemo(() => new Map((members.data ?? []).map((m) => [m.id, m])), [members.data]);
 
-  if (exp.isError) {
+  // A failed refresh with the expense already on the phone (weak signal) is not "not found".
+  if (exp.isError && !exp.data) {
     return (
       <div className="grid h-full place-items-center bg-sheet px-8 text-center text-ink">
         <div>
@@ -74,7 +75,7 @@ export function ExpenseScreen() {
     ev.preventDefault();
     const text = body.trim();
     if (!text) return;
-    comment.mutate(withKey({ expenseId, id: newId(), body: text }), { onError: (err) => toast(err.message) });
+    comment.mutate(withKey({ expenseId, id: newId(), body: text }));
     setBody("");
   }
 

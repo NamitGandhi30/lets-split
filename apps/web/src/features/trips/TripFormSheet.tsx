@@ -67,7 +67,6 @@ function TripForm({ group, onDone }: { group?: Group; onDone: () => void }) {
           onDone();
           nav(`/trips/${id}?invite=1`);
         },
-        onError: (err) => toast(err.message),
       },
     );
     if (!navigator.onLine) {

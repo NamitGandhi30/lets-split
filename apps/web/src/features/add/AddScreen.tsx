@@ -271,8 +271,9 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
       payers: payers ? payerList : undefined,
       split,
     };
-    if (existing) update.mutate(withKey({ groupId: group.id, expenseId: existing.id, body }), { onError: (e) => toast(e.message) });
-    else add.mutate(withKey({ groupId: group.id, body: { id: id.current, ...body } }), { onError: (e) => toast(`Couldn't save: ${e.message}`) });
+    // A failure shows up later as a toast from useWriteFailures, even after this screen has closed.
+    if (existing) update.mutate(withKey({ groupId: group.id, expenseId: existing.id, body }));
+    else add.mutate(withKey({ groupId: group.id, body: { id: id.current, ...body } }));
 
     setStamped(true);
     setTimeout(() => {

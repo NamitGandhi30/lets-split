@@ -232,7 +232,7 @@ export function HomeScreen() {
           </div>
         )}
         <div className="mx-[18px] rounded-[var(--radius-card)] bg-card px-3.5 py-1">
-          {groups.isError || recent.isError ? (
+          {(groups.isError && !groups.data) || (recent.isError && !recent.data) ? (
             <p className="py-6 text-center text-[14px] text-muted">Couldn't load. Pull down or try again in a bit.</p>
           ) : !trip ? (
             <p className="py-6 text-center text-[14px] leading-[1.5] text-muted">

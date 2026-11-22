@@ -10,6 +10,13 @@
       "runtimeArgs": ["--filter", "@lets-split/web", "exec", "vite", "--port", "5174", "--strictPort"],
       "port": 5174,
       "env": { "API_DEV_URL": "http://127.0.0.1:8788" }
+    },
+    {
+      "name": "web-nonet",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@lets-split/web", "exec", "vite", "--port", "5175", "--strictPort"],
+      "port": 5175,
+      "env": { "API_DEV_URL": "http://127.0.0.1:9", "VITE_SUPABASE_URL": "http://127.0.0.1:9", "VITE_API_BASE": "" }
     }
   ]
 }

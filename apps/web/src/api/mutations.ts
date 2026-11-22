@@ -1,14 +1,20 @@
 import { computeExpense, type SplitSpec } from "@lets-split/core";
-import { useMutation, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { newId } from "../lib/uuid";
-import { api, idem, unwrap, type Expense, type ExpenseCreate, type Schemas, type SplitInput } from "./client";
+import { useToast } from "../ui/Toast";
+import { api, ApiError, idem, unwrap, type Expense, type ExpenseCreate, type Schemas, type Settlement, type SplitInput } from "./client";
 import { keys } from "./hooks";
+import { applyLedger, bySpentAt, editExpenseLists, findExpense, findSettlement } from "./offline";
 
 /**
  * Every write is a named mutation with defaults registered on the QueryClient, so a write made
  * offline is persisted, survives a reload, and resumes when the network comes back. Each one
  * carries `key`, made once per user action and sent as the Idempotency-Key on every retry, and
  * new records carry device-made ids, so a retry can never write twice.
+ *
+ * All writes share one queue and go to the server one at a time, in the order they were made, so
+ * "add an expense, then edit it" made offline can't reach the server edit-first.
  */
 type K = { key: string };
 export type Vars = {
@@ -71,19 +77,27 @@ export function previewExpense(groupId: string, b: ExpenseCreate, myMemberId: st
   };
 }
 
-type Page = { items: Expense[]; nextCursor: string | null };
-
 export function registerMutations(qc: QueryClient) {
-  const def = <N extends Name>(name: N, o: { fn: (v: Vars[N]) => Promise<unknown>; settled?: (v: Vars[N], data: unknown) => void }) =>
+  const def = <N extends Name>(
+    name: N,
+    o: { fn: (v: Vars[N]) => Promise<unknown>; settled?: (v: Vars[N], data: unknown) => void; creates?: boolean },
+  ) =>
     qc.setMutationDefaults([name], {
-      mutationFn: (v: Vars[N]) => o.fn(v),
+      // A create is keyed by a device-made id. CONFLICT means an earlier attempt that timed out on our
+      // side did land, so the write is done.
+      mutationFn: (v: Vars[N]) =>
+        o.creates ? o.fn(v).catch((e) => (e instanceof ApiError && e.code === "CONFLICT" ? null : Promise.reject(e))) : o.fn(v),
       onSettled: (data: unknown, _e: unknown, v: Vars[N]) => o.settled?.(v, data),
-      retry: (n: number, e: unknown) => n < 3 && !(e instanceof Error && "status" in e && (e as { status: number }).status < 500),
+      // Writes the person waits on (joining, their profile) stay out of the queue so a stuck expense
+      // can't hold them up, and give up sooner so their screen can say so.
+      ...(ON_SCREEN.has(name) ? { retry: (n: number, e: unknown) => n < 3 && retryWrite(n, e) } : { scope: { id: "writes" }, retry: retryWrite }),
+      retryDelay: (n: number) => Math.min(30_000, 1000 * 2 ** n),
     });
 
   def("createGroup", {
     fn: ({ key, ...body }) => unwrap(api.POST("/api/v1/groups", { body, ...idem(key) })),
     settled: () => qc.invalidateQueries({ queryKey: keys.groups }),
+    creates: true,
   });
   def("updateGroup", {
     fn: ({ key, groupId, patch }) => unwrap(api.PATCH("/api/v1/groups/{groupId}", { params: { path: { groupId } }, body: patch, ...idem(key) })),
@@ -120,6 +134,7 @@ export function registerMutations(qc: QueryClient) {
     fn: ({ key, groupId, body }) =>
       unwrap(api.POST("/api/v1/groups/{groupId}/expenses", { params: { path: { groupId } }, body, ...idem(key) })),
     settled: (v) => groupScoped(qc, v.groupId),
+    creates: true,
   });
   def("updateExpense", {
     fn: ({ key, expenseId, body }) => unwrap(api.PUT("/api/v1/expenses/{expenseId}", { params: { path: { expenseId } }, body, ...idem(key) })),
@@ -146,11 +161,13 @@ export function registerMutations(qc: QueryClient) {
     fn: ({ key, expenseId, id, body }) =>
       unwrap(api.POST("/api/v1/expenses/{expenseId}/comments", { params: { path: { expenseId } }, body: { id, body }, ...idem(key) })),
     settled: (v) => qc.invalidateQueries({ queryKey: keys.comments(v.expenseId) }),
+    creates: true,
   });
   def("addSettlement", {
     fn: ({ key, groupId, body }) =>
       unwrap(api.POST("/api/v1/groups/{groupId}/settlements", { params: { path: { groupId } }, body, ...idem(key) })),
     settled: (v) => groupScoped(qc, v.groupId),
+    creates: true,
   });
   def("deleteSettlement", {
     fn: ({ key, settlementId }) => unwrap(api.DELETE("/api/v1/settlements/{settlementId}", { params: { path: { settlementId } }, ...idem(key) })),
@@ -165,43 +182,158 @@ export function registerMutations(qc: QueryClient) {
     settled: () => qc.invalidateQueries({ queryKey: keys.activity }),
   });
 
-  // Optimistic touches so the app answers instantly, online or not.
-  qc.setMutationDefaults(["addExpense"], {
-    ...qc.getMutationDefaults(["addExpense"]),
-    onMutate: async (v: Vars["addExpense"]) => {
-      const groups = qc.getQueryData<{ id: string; myMemberId: string | null }[]>(keys.groups);
-      const me = qc.getQueryData<{ id: string }>(keys.me);
-      const mine = groups?.find((g) => g.id === v.groupId)?.myMemberId;
-      if (!mine || !me) return;
-      let preview: Expense;
-      try {
-        preview = previewExpense(v.groupId, v.body, mine, me.id);
-      } catch {
-        return;
-      }
-      await qc.cancelQueries({ queryKey: keys.expenses(v.groupId) });
-      qc.setQueriesData<Page>({ queryKey: keys.expenses(v.groupId) }, (old) =>
-        old && "items" in old && !old.items.some((e) => e.id === preview.id) ? { ...old, items: [preview, ...old.items] } : old,
-      );
-    },
+  // Optimistic touches so the app answers instantly, online or not: the expense lists, the balances
+  // and the trip totals all move on the phone, and the server's numbers replace them once it syncs.
+  const touch = <N extends Name>(name: N, onMutate: (v: Vars[N]) => Promise<void> | void) =>
+    qc.setMutationDefaults([name], { ...qc.getMutationDefaults([name]), onMutate });
+
+  // What a removed expense looked like, so Undo can put it back with no network.
+  const removed = new Map<string, Expense>();
+  const myIds = (groupId: string) => {
+    const groups = qc.getQueryData<{ id: string; myMemberId: string | null }[]>(keys.groups);
+    const me = qc.getQueryData<{ id: string }>(keys.me);
+    const member = groups?.find((g) => g.id === groupId)?.myMemberId;
+    return member && me ? { member, me: me.id } : null;
+  };
+  const preview = (groupId: string, body: ExpenseCreate) => {
+    const ids = myIds(groupId);
+    if (!ids) return null;
+    try {
+      return previewExpense(groupId, body, ids.member, ids.me);
+    } catch {
+      return null;
+    }
+  };
+  const hold = (groupId: string, list: "expenses" | "settlements") =>
+    Promise.all([qc.cancelQueries({ queryKey: keys[list](groupId) }), qc.cancelQueries({ queryKey: keys.balances(groupId) })]);
+
+  touch("addExpense", async (v) => {
+    const e = preview(v.groupId, v.body);
+    if (!e || findExpense(qc, v.groupId, e.id)) return;
+    await hold(v.groupId, "expenses");
+    editExpenseLists(qc, v.groupId, (items) => [e, ...items].sort(bySpentAt));
+    qc.setQueryData(keys.expense(e.id), e);
+    applyLedger(qc, v.groupId, { kind: "expense", sign: 1, expense: e });
   });
-  qc.setMutationDefaults(["deleteExpense"], {
-    ...qc.getMutationDefaults(["deleteExpense"]),
-    onMutate: async (v: Vars["deleteExpense"]) => {
-      await qc.cancelQueries({ queryKey: keys.expenses(v.groupId) });
-      qc.setQueriesData<Page>({ queryKey: keys.expenses(v.groupId) }, (old) =>
-        old && "items" in old ? { ...old, items: old.items.filter((e) => e.id !== v.expenseId) } : old,
-      );
-    },
+
+  touch("updateExpense", async (v) => {
+    const old = findExpense(qc, v.groupId, v.expenseId);
+    const e = preview(v.groupId, { id: v.expenseId, ...v.body });
+    if (!old || !e) return;
+    const next: Expense = { ...e, createdBy: old.createdBy, createdAt: old.createdAt };
+    await hold(v.groupId, "expenses");
+    editExpenseLists(qc, v.groupId, (items) => items.map((x) => (x.id === next.id ? next : x)).sort(bySpentAt));
+    qc.setQueryData(keys.expense(next.id), next);
+    applyLedger(qc, v.groupId, { kind: "expense", sign: -1, expense: old });
+    applyLedger(qc, v.groupId, { kind: "expense", sign: 1, expense: next });
   });
-  qc.setMutationDefaults(["markSeen"], {
-    ...qc.getMutationDefaults(["markSeen"]),
-    onMutate: () => {
-      qc.setQueryData<{ items: { unread: boolean }[]; unreadCount: number }>(keys.activity, (old) =>
-        old ? { ...old, unreadCount: 0, items: old.items.map((i) => ({ ...i, unread: false })) } : old,
-      );
-    },
+
+  touch("deleteExpense", async (v) => {
+    const old = findExpense(qc, v.groupId, v.expenseId);
+    await hold(v.groupId, "expenses");
+    editExpenseLists(qc, v.groupId, (items) => items.filter((e) => e.id !== v.expenseId));
+    if (!old || old.deletedAt) return;
+    removed.set(old.id, old);
+    qc.setQueryData<Expense>(keys.expense(old.id), (e) => (e ? { ...e, deletedAt: new Date().toISOString() } : e));
+    applyLedger(qc, v.groupId, { kind: "expense", sign: -1, expense: old });
   });
+
+  touch("restoreExpense", async (v) => {
+    const old = removed.get(v.expenseId) ?? findExpense(qc, v.groupId, v.expenseId);
+    if (!old || (!old.deletedAt && !removed.has(old.id))) return;
+    removed.delete(old.id);
+    const back: Expense = { ...old, deletedAt: null };
+    await hold(v.groupId, "expenses");
+    editExpenseLists(qc, v.groupId, (items) => (items.some((e) => e.id === back.id) ? items : [back, ...items].sort(bySpentAt)));
+    qc.setQueryData(keys.expense(back.id), back);
+    applyLedger(qc, v.groupId, { kind: "expense", sign: 1, expense: back });
+  });
+
+  touch("addSettlement", async (v) => {
+    const b = v.body;
+    if (findSettlement(qc, v.groupId, b.id)) return;
+    await hold(v.groupId, "settlements");
+    const s: Settlement = {
+      id: b.id, groupId: v.groupId, fromMemberId: b.fromMemberId, toMemberId: b.toMemberId, amountPaise: b.amountPaise,
+      method: b.method ?? "other", note: b.note ?? null, settledAt: new Date().toISOString(),
+      createdBy: qc.getQueryData<{ id: string }>(keys.me)?.id ?? "", deletedAt: null,
+    };
+    qc.setQueryData<Settlement[]>(keys.settlements(v.groupId), (list) => (list ? [s, ...list] : list));
+    applyLedger(qc, v.groupId, { kind: "settlement", sign: 1, from: s.fromMemberId, to: s.toMemberId, amountPaise: s.amountPaise });
+  });
+
+  touch("deleteSettlement", async (v) => {
+    const s = findSettlement(qc, v.groupId, v.settlementId);
+    if (!s) return;
+    await hold(v.groupId, "settlements");
+    qc.setQueryData<Settlement[]>(keys.settlements(v.groupId), (list) => list?.filter((x) => x.id !== s.id));
+    applyLedger(qc, v.groupId, { kind: "settlement", sign: -1, from: s.fromMemberId, to: s.toMemberId, amountPaise: s.amountPaise });
+  });
+
+  touch("markSeen", () => {
+    qc.setQueryData<{ items: { unread: boolean }[]; unreadCount: number }>(keys.activity, (old) =>
+      old ? { ...old, unreadCount: 0, items: old.items.map((i) => ({ ...i, unread: false })) } : old,
+    );
+  });
+}
+
+/**
+ * Keep retrying a write until it lands, unless the server turned it down. "No network", "too slow"
+ * and server hiccups all retry (the phone can claim to be online on one bar of signal), and the
+ * write stays saved on the phone the whole time. 401 retries too: the session renews in between.
+ */
+function retryWrite(n: number, e: unknown) {
+  if (!(e instanceof ApiError)) return true;
+  if (e.status >= 500 || e.status === 401 || e.status === 408 || e.status === 429) return n < 6;
+  return false;
+}
+
+/**
+ * After a restart, pick up every queued write: the ones that were waiting for a network, and the
+ * ones that were mid-request when the app closed. They run one at a time, in the order they were made.
+ */
+export function resumeQueuedWrites(qc: QueryClient) {
+  for (const m of qc.getMutationCache().getAll()) {
+    if (m.state.status === "pending") void m.continue().catch(() => {});
+  }
+}
+
+// Writes whose own screen shows what went wrong (the person is still looking at it).
+const ON_SCREEN = new Set<string>(["join", "updateMe", "rotateInvite", "markSeen"]);
+const FAILED: Partial<Record<Name, string>> = {
+  createGroup: "Couldn't create the trip",
+  updateGroup: "Couldn't update the trip",
+  archiveGroup: "Couldn't archive the trip",
+  addMember: "Couldn't add that person",
+  removeMember: "Couldn't remove that person",
+  addExpense: "Couldn't save the expense",
+  updateExpense: "Couldn't save your changes",
+  deleteExpense: "Couldn't delete the expense",
+  restoreExpense: "Couldn't bring the expense back",
+  addComment: "Couldn't post the comment",
+  addSettlement: "Couldn't record the payment",
+  deleteSettlement: "Couldn't undo the payment",
+};
+
+/**
+ * A queued write can fail long after its screen has closed (or after a restart), so the message
+ * comes from here rather than from the screen that made it.
+ */
+export function useWriteFailures() {
+  const qc = useQueryClient();
+  const toast = useToast();
+  useEffect(
+    () =>
+      qc.getMutationCache().subscribe((ev) => {
+        if (ev.type !== "updated" || ev.action.type !== "error") return;
+        const name = ev.mutation.options.mutationKey?.[0] as Name | undefined;
+        if (!name || ON_SCREEN.has(name)) return;
+        const why = ev.action.error instanceof Error ? ev.action.error.message : "";
+        const what = FAILED[name] ?? "Couldn't sync a change";
+        toast(why ? `${what}: ${why}` : what, undefined, 5000);
+      }),
+    [qc, toast],
+  );
 }
 
 /** `const add = useWrite("addExpense"); add.mutate(vars)`. Pass `withKey` to fill in the Idempotency-Key. */
