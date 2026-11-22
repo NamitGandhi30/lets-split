@@ -83,6 +83,14 @@ function useDirection(): Dir {
   return memo.current.dir;
 }
 
+/** The base colour behind each screen, so any strip iOS leaves (under the home indicator) matches it. */
+function screenBg(p: string): string {
+  if (p === "/add" || /^\/expenses\/[^/]+\/edit/.test(p)) return "#EEF1FB";
+  if (p === "/wrapped") return "#000000";
+  if (/^\/(trips|expenses|alerts|me|stats)(\/|$)/.test(p)) return "#F6F6F7";
+  return "#0E0F12";
+}
+
 /** Signed-in layout: the stacked screens, the floating tab bar on tab screens, and an offline pill. */
 export function AppShell() {
   const loc = useLocation();
@@ -95,6 +103,11 @@ export function AppShell() {
   const dir = useDirection();
   const reduce = useReducedMotion();
   const stacked = isStacked(loc.pathname);
+  useEffect(() => {
+    const bg = screenBg(loc.pathname);
+    document.documentElement.style.setProperty("--screen-bg", bg);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", bg);
+  }, [loc.pathname]);
 
   // First run: name, avatar and UPI before anything else (an invite link resumes afterwards).
   if (me.data && !me.data.onboarded && loc.pathname !== "/welcome") {

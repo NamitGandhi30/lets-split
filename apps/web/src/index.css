@@ -56,11 +56,19 @@
      indicator, so no page background shows as a band. */
   #root {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100vh;
+    height: 100lvh;
     overflow: hidden;
   }
+  html,
+  body {
+    background: var(--screen-bg, var(--color-chrome));
+    transition: background-color 0.25s;
+  }
   html {
-    background: var(--color-chrome);
     color-scheme: dark;
     -webkit-text-size-adjust: 100%;
     overscroll-behavior: none;
@@ -68,7 +76,6 @@
   body {
     margin: 0;
     font-family: var(--font-sans);
-    background: var(--color-chrome);
     color: var(--color-on-dark);
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
