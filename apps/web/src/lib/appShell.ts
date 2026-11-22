@@ -11,6 +11,8 @@ export function installNativeShell() {
   const nav = navigator as Navigator & { standalone?: boolean };
   const standalone = nav.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
   const root = document.documentElement;
+  // Old-style "Add to Home Screen" apps may not match (display-mode: standalone); see index.css.
+  if (standalone) root.classList.add("standalone");
 
   const size = () => {
     const vh = window.innerHeight;

@@ -83,7 +83,7 @@ function TripForm({ group, onDone }: { group?: Group; onDone: () => void }) {
         <span className={labelCls}>NAME</span>
         <input
           ref={nameRef}
-          autoFocus={!group}
+          data-autofocus={group ? undefined : true}
           className={`${fieldCls} ${nudge ? "ring-2 ring-neg" : ""}`}
           value={name}
           maxLength={60}

@@ -1,5 +1,5 @@
 import { AnimatePresence, animate, motion, useDragControls, useMotionValue, useReducedMotion, useTransform, type PanInfo } from "motion/react";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { snappy } from "./motion";
 
@@ -15,6 +15,10 @@ interface SheetProps {
 /**
  * Modal bottom sheet. Springs up on the snappy spring; drag the handle down to dismiss (a quick
  * flick or past a third of its height), otherwise it springs back. Escape and the scrim close it.
+ *
+ * A field marked `data-autofocus` gets focus once the sheet has slid up. Focusing it while the
+ * sheet is still below the screen makes iOS scroll the page down to it (a black half-screen),
+ * so the keyboard is raised from an on-screen stand-in field during the tap, then handed over.
  */
 export function Sheet({ open, onClose, title, children, tone = "light" }: SheetProps) {
   return createPortal(
@@ -30,18 +34,31 @@ function SheetBody({ onClose, title, children, tone }: Omit<SheetProps, "open">)
   const panel = useRef<HTMLDivElement>(null);
   const scrim = useTransform(y, [0, 400], [1, 0]);
   const labelId = useId();
+  const proxy = useRef<HTMLInputElement>(null);
+  const prev = useRef<HTMLElement | null>(null);
+  const target = () => panel.current?.querySelector<HTMLElement>("[data-autofocus]") ?? null;
+
+  // Still inside the tap that opened the sheet, so iOS lets the keyboard come up.
+  useLayoutEffect(() => {
+    prev.current = document.activeElement as HTMLElement | null;
+    const t = target();
+    if (!t) panel.current?.focus({ preventScroll: true });
+    else if (reduce) t.focus({ preventScroll: true });
+    else proxy.current?.focus({ preventScroll: true });
+  }, [reduce]);
+
+  const onOpened = () => {
+    if (document.activeElement === proxy.current) target()?.focus({ preventScroll: true });
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
-    const prev = document.activeElement as HTMLElement | null;
-    // Keep an autofocused field's focus; otherwise move focus into the dialog.
-    if (!panel.current?.contains(document.activeElement)) panel.current?.focus();
     return () => {
       window.removeEventListener("keydown", onKey);
-      prev?.focus?.();
     };
   }, [onClose]);
+  useEffect(() => () => prev.current?.focus?.({ preventScroll: true }), []);
 
   const onDragEnd = (_: unknown, info: PanInfo) => {
     const h = panel.current?.offsetHeight ?? 500;
@@ -52,6 +69,12 @@ function SheetBody({ onClose, title, children, tone }: Omit<SheetProps, "open">)
   const light = tone === "light";
   return (
     <div className="absolute inset-0 z-50">
+      <input
+        ref={proxy}
+        aria-hidden="true"
+        tabIndex={-1}
+        className="pointer-events-none absolute top-0 left-0 h-px w-px opacity-0 text-[16px]"
+      />
       <motion.div
         className="absolute inset-0 bg-black/55"
         style={{ opacity: scrim }}
@@ -81,6 +104,7 @@ function SheetBody({ onClose, title, children, tone }: Omit<SheetProps, "open">)
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={{ top: 0.05, bottom: 1 }}
         onDragEnd={onDragEnd}
+        onAnimationComplete={onOpened}
       >
         <div onPointerDown={(e) => controls.start(e)} className="cursor-grab touch-none pt-2.5 pb-1 active:cursor-grabbing">
           <i className={`mx-auto block h-[5px] w-10 rounded-[3px] ${light ? "bg-grab" : "bg-white/20"}`} />
