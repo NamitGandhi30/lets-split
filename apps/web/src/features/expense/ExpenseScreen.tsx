@@ -1,4 +1,5 @@
 import { formatINR } from "@lets-split/core";
+import { useBack } from "../../lib/useBack";
 import { accentOr, inkOn } from "../../lib/color";
 import { motion } from "motion/react";
 import { useMemo, useState, type FormEvent } from "react";
@@ -26,6 +27,7 @@ const SPLIT_LABEL: Record<string, string> = {
 export function ExpenseScreen() {
   const { expenseId = "" } = useParams();
   const nav = useNavigate();
+  const goBack = useBack("/");
   const toast = useToast();
   const exp = useExpense(expenseId);
   const e = exp.data;
@@ -91,7 +93,7 @@ export function ExpenseScreen() {
     <div className="no-scrollbar h-full overflow-y-auto bg-sheet text-ink">
       <div className="px-5 pt-[calc(env(safe-area-inset-top,0px)+12px)] pb-5 text-center">
         <div className="flex justify-between">
-          <button type="button" onClick={() => nav(-1)} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-card">
+          <button type="button" onClick={goBack} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-card">
             <BackIcon />
           </button>
           <Link to={`/trips/${e.groupId}`} className="flex h-[30px] items-center self-center rounded-full px-3 text-[13px] font-semibold" style={{ background: accentOr(group.data?.accent), color: inkOn(group.data?.accent) }}>

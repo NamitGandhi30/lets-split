@@ -5,6 +5,9 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import type { Expense, Member } from "../../api/client";
 import { useAllExpenses, useBalances, useGroup, useMembers, useSettlements } from "../../api/hooks";
 import { useWrite, withKey } from "../../api/mutations";
+import { useBack } from "../../lib/useBack";
+import { PullToRefresh } from "../../ui/PullToRefresh";
+import { SwipeRow } from "../../ui/SwipeRow";
 import { accentOr, inkOn, isDark } from "../../lib/color";
 import { dayLabel, firstName, nameOf } from "../../lib/people";
 import { Amount } from "../../ui/Amount";
@@ -32,6 +35,9 @@ export function TripScreen() {
   const expenses = useAllExpenses(groupId);
   const settlements = useSettlements(groupId);
   const archive = useWrite("archiveGroup");
+  const goBack = useBack("/");
+  const del = useWrite("deleteExpense");
+  const restore = useWrite("restoreExpense");
   const [tab, setTab] = useState<Tab>(params.get("tab") === "bal" ? "bal" : "exp");
   const [menu, setMenu] = useState(false);
   const [edit, setEdit] = useState(false);
@@ -69,12 +75,13 @@ export function TripScreen() {
   const active = (members.data ?? []).filter((m) => !m.removedAt);
 
   return (
-    <div className="no-scrollbar h-full overflow-y-auto bg-sheet text-ink">
+    <div className="relative h-full bg-sheet text-ink">
+      <PullToRefresh tone={darkHero ? "light" : "dark"} onRefresh={() => Promise.all([group.refetch(), members.refetch(), balances.refetch(), expenses.refetch(), settlements.refetch()])}>
       <div className="px-5 pt-[calc(env(safe-area-inset-top,0px)+12px)] pb-5 transition-colors duration-500" style={{ background: accent, color: inkOn(accent) }}>
         <div className="flex items-center justify-between">
-          <Link to="/" aria-label="Back to home" className="grid h-10 w-10 place-items-center rounded-full bg-card text-ink">
+          <button type="button" onClick={goBack} aria-label="Back to home" className="grid h-10 w-10 place-items-center rounded-full bg-card text-ink">
             <BackIcon />
-          </Link>
+          </button>
           <div className="flex gap-2">
             <button type="button" aria-label="Invite people" onClick={() => setInvite(true)} className="grid h-10 w-10 place-items-center rounded-full bg-card text-ink">
               <UserPlusIcon />
@@ -147,9 +154,17 @@ export function TripScreen() {
                     <h3 className="mx-[22px] mt-4 mb-1.5 text-[12px] font-semibold tracking-[0.06em] text-muted">{d.label}</h3>
                     <div className="mx-[18px] rounded-[var(--radius-card)] bg-card px-3.5 py-0.5">
                       {d.items.map((e, i) => (
-                        <Link key={e.id} to={`/expenses/${e.id}`} className="block">
-                          <ExpenseRow e={e} i={i} members={memberMap} myMemberId={g?.myMemberId ?? null} />
-                        </Link>
+                        <SwipeRow
+                          key={e.id}
+                          onDelete={() => {
+                            del.mutate(withKey({ groupId, expenseId: e.id }));
+                            toast(`Deleted ${e.description}`, { label: "Undo", onClick: () => restore.mutate(withKey({ groupId, expenseId: e.id })) });
+                          }}
+                        >
+                          <Link to={`/expenses/${e.id}`} className="block" draggable={false}>
+                            <ExpenseRow e={e} i={i} members={memberMap} myMemberId={g?.myMemberId ?? null} />
+                          </Link>
+                        </SwipeRow>
                       ))}
                     </div>
                   </section>
@@ -179,6 +194,7 @@ export function TripScreen() {
           <div className="h-[110px]" />
         </motion.div>
       </AnimatePresence>
+      </PullToRefresh>
 
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-sheet from-55% to-transparent px-5 pt-6 pb-[calc(18px+env(safe-area-inset-bottom,0px))]">
         <Link

@@ -68,10 +68,31 @@
     -webkit-tap-highlight-color: transparent;
     font-variant-numeric: tabular-nums;
   }
-  button {
-    cursor: pointer;
+  /* Feel like an app, not a web page: no long-press callouts, no stray text selection,
+     no double-tap zoom delay. Fields stay selectable. */
+  body {
+    -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+  }
+  input,
+  textarea,
+  [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  a,
+  button,
+  [role="button"],
+  label {
+    touch-action: manipulation;
+  }
+  img,
+  svg {
+    -webkit-user-drag: none;
+  }
+  button {
+    cursor: pointer;
   }
   :focus-visible {
     outline: 2px solid var(--color-cobalt);

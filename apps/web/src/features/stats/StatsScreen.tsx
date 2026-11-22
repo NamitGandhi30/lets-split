@@ -1,4 +1,5 @@
 import { formatINR } from "@lets-split/core";
+import { PullToRefresh } from "../../ui/PullToRefresh";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
@@ -45,7 +46,7 @@ export function StatsScreen() {
   const accent = accentOr(trip.accent);
 
   return (
-    <div className="no-scrollbar h-full overflow-y-auto bg-sheet text-ink">
+    <PullToRefresh className="bg-sheet text-ink" onRefresh={() => Promise.all([stats.refetch(), groups.refetch()])}>
       <div className="px-5 pt-[calc(env(safe-area-inset-top,0px)+14px)]">
         <div className="flex items-center justify-between">
           <h1 className="text-[22px] font-bold tracking-[-0.01em]">Stats</h1>
@@ -97,7 +98,7 @@ export function StatsScreen() {
         </div>
       )}
       <div className="h-[120px]" />
-    </div>
+    </PullToRefresh>
   );
 }
 

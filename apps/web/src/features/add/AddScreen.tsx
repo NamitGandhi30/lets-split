@@ -1,4 +1,5 @@
 import { computeExpense, formatINR, inrParts, type SplitSpec } from "@lets-split/core";
+import { useBack } from "../../lib/useBack";
 import { accentOr, inkOn } from "../../lib/color";
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -103,6 +104,7 @@ function initialFrom(e: Expense | undefined, active: Member[]) {
 
 function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; existing?: Expense }) {
   const nav = useNavigate();
+  const goBack = useBack("/");
   const toast = useToast();
   const me = useMe();
   const membersQ = useMembers(group.id);
@@ -293,7 +295,7 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
   return (
     <div className="no-scrollbar h-full overflow-y-auto bg-split text-ink">
       <div className="flex items-center justify-between px-5 pt-[calc(env(safe-area-inset-top,0px)+12px)]">
-        <button type="button" onClick={() => nav(-1)} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-card">
+        <button type="button" onClick={goBack} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-card">
           <BackIcon />
         </button>
         <b className="text-[17px] font-semibold">{existing ? "Edit expense" : "New expense"}</b>

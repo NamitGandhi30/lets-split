@@ -1,4 +1,5 @@
 import { formatINR } from "@lets-split/core";
+import { PullToRefresh } from "../../ui/PullToRefresh";
 import { motion } from "motion/react";
 import { useEffect, useRef } from "react";
 import { Link } from "react-router";
@@ -66,7 +67,7 @@ export function AlertsScreen() {
   const earlier = items.filter((i) => when(i.createdAt) !== "Today");
 
   return (
-    <div className="no-scrollbar h-full overflow-y-auto bg-sheet text-ink">
+    <PullToRefresh className="bg-sheet text-ink" onRefresh={() => feed.refetch()}>
       <PageHeader title="Alerts" />
       {feed.isPending ? (
         <div className="mx-[18px] mt-4 h-48 animate-pulse rounded-[var(--radius-card)] bg-card" />
@@ -121,6 +122,6 @@ export function AlertsScreen() {
           ))
       )}
       <div className="h-[110px]" />
-    </div>
+    </PullToRefresh>
   );
 }

@@ -1,5 +1,5 @@
 import { formatINR } from "@lets-split/core";
-import { AnimatePresence, animate, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, useTransform } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import type { Member, WrappedData } from "../../api/client";
@@ -7,6 +7,8 @@ import { useGroups, useMembers, useWrapped } from "../../api/hooks";
 import { useCurrentTripId } from "../../lib/currentTrip";
 import { CATEGORIES } from "../../lib/people";
 import { Avatar } from "../../ui/Avatar";
+import { useBack } from "../../lib/useBack";
+import { snappy } from "../../ui/motion";
 import { useToast } from "../../ui/Toast";
 
 // Trip Wrapped, per the approved prototype: five auto-advancing stories over drifting gradient
@@ -244,6 +246,7 @@ export function WrappedScreen() {
   const trip = (groups.data ?? []).filter((g) => !g.archivedAt).find((g) => g.id === currentId) ?? groups.data?.find((g) => !g.archivedAt);
   const data = useWrapped(trip?.id);
   const members = useMembers(trip?.id);
+  const close = useBack("/stats");
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
   const bar = useRef<HTMLElement | null>(null);
@@ -303,9 +306,37 @@ export function WrappedScreen() {
     return () => cancelAnimationFrame(raf);
   }, [i, paused, data.data, n, go]);
 
+  // Swipe down to close (the story follows your finger and shrinks a little), swipe sideways to
+  // change story, tap left/right, hold to pause.
+  const pull = useMotionValue(0);
+  const pullScale = useTransform(pull, [0, 400], [1, 0.86]);
+  const pullRadius = useTransform(pull, [0, 120], [0, 28]);
+  const start = useRef<{ x: number; y: number } | null>(null);
+
+  function onMove(e: React.PointerEvent) {
+    const s0 = start.current;
+    if (!s0) return;
+    const dy = e.clientY - s0.y;
+    if (dy > 0 && dy > Math.abs(e.clientX - s0.x)) pull.set(dy);
+  }
+
   function onUp(e: React.PointerEvent) {
     setPaused(false);
-    if (performance.now() - held.current > 350) return; // that was a hold, not a tap
+    const s0 = start.current;
+    start.current = null;
+    const dx = s0 ? e.clientX - s0.x : 0;
+    const dy = s0 ? e.clientY - s0.y : 0;
+    if (dy > 110 && dy > Math.abs(dx)) {
+      animate(pull, window.innerHeight, { ...snappy, restDelta: 1 }).then(close);
+      return;
+    }
+    animate(pull, 0, snappy);
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) go(i === n - 1 ? 0 : i + 1);
+      else go(Math.max(0, i - 1));
+      return;
+    }
+    if (performance.now() - held.current > 350 || Math.abs(dy) > 12) return; // a hold or a drag, not a tap
     const x = e.clientX / window.innerWidth;
     if (i === n - 1 && x >= 0.3) return go(0);
     if (x < 0.3) go(Math.max(0, i - 1));
@@ -314,14 +345,21 @@ export function WrappedScreen() {
 
   const pal = PALETTES[i % PALETTES.length]!;
   return (
-    <div
+    <motion.div
       className="relative h-full cursor-pointer touch-none overflow-hidden bg-black text-white select-none"
-      onPointerDown={() => {
+      style={{ y: pull, scale: pullScale, borderRadius: pullRadius }}
+      onPointerDown={(e) => {
         held.current = performance.now();
+        start.current = { x: e.clientX, y: e.clientY };
         setPaused(true);
       }}
+      onPointerMove={onMove}
       onPointerUp={onUp}
-      onPointerCancel={() => setPaused(false)}
+      onPointerCancel={() => {
+        start.current = null;
+        setPaused(false);
+        animate(pull, 0, snappy);
+      }}
     >
       <AnimatePresence initial={false}>
         <motion.div key={i} className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}>
@@ -342,7 +380,7 @@ export function WrappedScreen() {
         aria-label="Close Wrapped"
         onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
-        onClick={() => nav("/stats")}
+        onClick={close}
         className="absolute top-[calc(env(safe-area-inset-top,0px)+26px)] right-[22px] z-[6] grid h-8 w-8 place-items-center rounded-full bg-black/35"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
@@ -374,6 +412,6 @@ export function WrappedScreen() {
           </motion.div>
         </AnimatePresence>
       )}
-    </div>
+    </motion.div>
   );
 }

@@ -1,16 +1,45 @@
 import { useIsMutating, useIsRestoring } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
-import { Navigate, useLocation, useOutlet } from "react-router";
+import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, type Transition } from "motion/react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Navigate, useLocation, useNavigationType, useOutlet } from "react-router";
 import { useMe } from "../api/hooks";
 import { useChangePings } from "../lib/realtime";
+import { useBack } from "../lib/useBack";
 import { CloudOffIcon } from "../ui/icons";
 import { snappy } from "../ui/motion";
 import { TabBar } from "../ui/TabBar";
 
 // Add expense has its own Save button where the tab bar would sit.
 const TAB_ROUTES = ["/", "/stats"];
-const isPage = (p: string) => /^\/(trips|expenses|alerts|me)\b/.test(p);
+const TAB_INDEX: Record<string, number> = { "/": 0, "/add": 1, "/stats": 2 };
+/** Pages that stack on top (push in from the right, swipe from the left edge to go back). */
+const isStacked = (p: string) => /^\/(trips|expenses|alerts|me|add|wrapped|join)\b/.test(p);
+
+type Dir = { kind: "push" | "pop" | "tab" | "fade" | "up" | "down"; sign: number };
+
+/**
+ * Page push / pop, like UIKit's navigation controller: the new page slides in from the right over
+ * the old one, which drifts left and dims; going back reverses it. Critically damped so the page
+ * edge never overshoots and flashes the background.
+ */
+const PAGE: Transition = { type: "spring", stiffness: 320, damping: 36, restDelta: 0.5 };
+const variants = {
+  initial: (d: Dir) =>
+    d.kind === "up" ? { y: "100%", opacity: 1, zIndex: 2 }
+    : d.kind === "down" ? { opacity: 1, zIndex: 1 }
+    : d.kind === "push" ? { x: "100%", opacity: 1, zIndex: 2 }
+    : d.kind === "pop" ? { x: "-28%", opacity: 0.6, zIndex: 1 }
+    : d.kind === "tab" ? { x: 28 * d.sign, opacity: 0, zIndex: 2 }
+    : { opacity: 0, zIndex: 2 },
+  animate: { x: 0, y: 0, opacity: 1, transition: { x: PAGE, y: PAGE, opacity: { duration: 0.25 } } },
+  exit: (d: Dir) =>
+    d.kind === "up" ? { opacity: 0.6, zIndex: 1, transition: { duration: 0.3 } }
+    : d.kind === "down" ? { y: "100%", zIndex: 2, transition: { y: PAGE } }
+    : d.kind === "push" ? { x: "-28%", opacity: 0.6, zIndex: 1, transition: { x: PAGE, opacity: { duration: 0.3 } } }
+    : d.kind === "pop" ? { x: "100%", opacity: 1, zIndex: 2, transition: { x: PAGE } }
+    : d.kind === "tab" ? { x: -28 * d.sign, opacity: 0, zIndex: 1, transition: { duration: 0.18 } }
+    : { opacity: 0, zIndex: 1, transition: { duration: 0.15 } },
+};
 
 function useOnline() {
   const [online, setOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
@@ -27,7 +56,34 @@ function useOnline() {
   return online;
 }
 
-/** Signed-in layout: the current screen, the floating tab bar on tab screens, and an offline pill. */
+/** Which way the next screen should move, from where we were and how we got here. */
+function useDirection(): Dir {
+  const loc = useLocation();
+  const navType = useNavigationType();
+  const prev = useRef(loc.pathname);
+  const memo = useRef<{ key: string; dir: Dir }>({ key: "", dir: { kind: "fade", sign: 1 } });
+  if (memo.current.key !== loc.key) {
+    const from = prev.current;
+    const to = loc.pathname;
+    const back = navType === "POP" || (loc.state as { back?: boolean } | null)?.back === true;
+    let dir: Dir;
+    if (from === to) dir = { kind: "fade", sign: 1 };
+    else if (to === "/wrapped") dir = { kind: "up", sign: 1 };
+    else if (from === "/wrapped") dir = { kind: "down", sign: -1 };
+    else if (to in TAB_INDEX && from in TAB_INDEX && !isStacked(from) && !isStacked(to)) dir = { kind: "tab", sign: Math.sign(TAB_INDEX[to]! - TAB_INDEX[from]!) || 1 };
+    else if (back) dir = { kind: "pop", sign: -1 };
+    else if (isStacked(to)) dir = { kind: "push", sign: 1 };
+    else if (isStacked(from)) dir = { kind: "pop", sign: -1 };
+    else dir = { kind: "fade", sign: 1 };
+    memo.current = { key: loc.key, dir };
+  }
+  useEffect(() => {
+    prev.current = loc.pathname;
+  }, [loc.pathname]);
+  return memo.current.dir;
+}
+
+/** Signed-in layout: the stacked screens, the floating tab bar on tab screens, and an offline pill. */
 export function AppShell() {
   const loc = useLocation();
   const outlet = useOutlet();
@@ -36,7 +92,9 @@ export function AppShell() {
   const queued = useIsMutating();
   useChangePings(online && !restoring);
   const me = useMe();
-  const page = isPage(loc.pathname);
+  const dir = useDirection();
+  const reduce = useReducedMotion();
+  const stacked = isStacked(loc.pathname);
 
   // First run: name, avatar and UPI before anything else (an invite link resumes afterwards).
   if (me.data && !me.data.onboarded && loc.pathname !== "/welcome") {
@@ -45,17 +103,18 @@ export function AppShell() {
 
   return (
     <div className="relative h-full overflow-hidden bg-chrome">
-      <AnimatePresence mode="popLayout" initial={false}>
+      <AnimatePresence mode="popLayout" initial={false} custom={reduce ? { kind: "fade", sign: 1 } : dir}>
         <motion.main
           key={loc.pathname}
-          className="absolute inset-0"
-          style={{ willChange: "opacity, transform" }}
-          initial={page ? { opacity: 0, x: 24 } : { opacity: 0 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, transition: { duration: 0.12 } }}
-          transition={{ opacity: { duration: 0.2 }, x: snappy }}
+          custom={reduce ? { kind: "fade", sign: 1 } : dir}
+          variants={variants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="absolute inset-0 shadow-[-10px_0_30px_rgba(0,0,0,.28)]"
+          style={{ willChange: "transform" }}
         >
-          {outlet}
+          <EdgeSwipe enabled={stacked && loc.pathname !== "/wrapped" && loc.pathname !== "/welcome"}>{outlet}</EdgeSwipe>
         </motion.main>
       </AnimatePresence>
       {TAB_ROUTES.includes(loc.pathname) && <TabBar />}
@@ -75,5 +134,62 @@ export function AppShell() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/**
+ * Swipe from the left edge to go back, like iOS: the page follows your finger (the dark chrome
+ * shows underneath), and letting go past a third of the screen, or with a quick flick, goes back.
+ */
+function EdgeSwipe({ enabled, children }: { enabled: boolean; children: ReactNode }) {
+  const x = useMotionValue(0);
+  const goBack = useBack("/");
+  const drag = useRef<{ id: number; x0: number; t: number; lx: number; lt: number; v: number } | null>(null);
+
+  const onDown = (e: React.PointerEvent) => {
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* pointer already gone */
+    }
+    drag.current = { id: e.pointerId, x0: e.clientX, t: performance.now(), lx: e.clientX, lt: performance.now(), v: 0 };
+  };
+  const onMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    const now = performance.now();
+    d.v = ((e.clientX - d.lx) / Math.max(1, now - d.lt)) * 1000;
+    d.lx = e.clientX;
+    d.lt = now;
+    x.set(Math.max(0, e.clientX - d.x0));
+  };
+  const onUp = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    drag.current = null;
+    const w = window.innerWidth;
+    if (x.get() > w / 3 || (d.v > 500 && x.get() > 30)) {
+      animate(x, w, { ...snappy, velocity: d.v, restDelta: 1 }).then(goBack);
+    } else {
+      animate(x, 0, { ...snappy, velocity: d.v });
+    }
+  };
+
+  return (
+    <>
+      <motion.div className="absolute inset-0" style={{ x }}>
+        {children}
+      </motion.div>
+      {enabled && (
+        <div
+          aria-hidden="true"
+          className="absolute top-0 bottom-0 left-0 z-[45] w-5 touch-none"
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onUp}
+        />
+      )}
+    </>
   );
 }
