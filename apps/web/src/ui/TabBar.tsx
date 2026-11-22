@@ -16,7 +16,7 @@ export function TabBar() {
   return (
     <nav
       aria-label="Main"
-      className="fixed left-1/2 z-40 flex -translate-x-1/2 gap-[5px] rounded-full bg-tabbar p-1.5 shadow-[0_10px_24px_rgba(0,0,0,.35)]"
+      className="absolute left-1/2 z-40 flex -translate-x-1/2 gap-[5px] rounded-full bg-tabbar p-1.5 shadow-[0_10px_24px_rgba(0,0,0,.35)]"
       style={{ bottom: "calc(18px + env(safe-area-inset-bottom, 0px))" }}
     >
       <motion.span

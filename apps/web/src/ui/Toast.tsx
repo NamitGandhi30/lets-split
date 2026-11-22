@@ -19,7 +19,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={show}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-4" style={{ bottom: "calc(92px + env(safe-area-inset-bottom, 0px))" }}>
+      <div className="pointer-events-none absolute inset-x-0 z-[60] flex justify-center px-4" style={{ bottom: "calc(92px + env(safe-area-inset-bottom, 0px))" }}>
         <AnimatePresence>
           {msg && (
             <motion.div

@@ -48,9 +48,15 @@
 }
 
 @layer base {
+  /* The document itself never scrolls, bounces or zooms; only our own scroll areas move. */
   html,
   body {
+    position: fixed;
+    inset: 0;
     height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: pan-x pan-y;
   }
   /* Fill the whole screen in the installed app, including under the status bar and home
      indicator, so no page background shows as a band. */
@@ -59,8 +65,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 100vh;
-    height: 100lvh;
+    height: var(--app-h, 100%);
     overflow: hidden;
   }
   html,
@@ -83,8 +88,13 @@
   }
   /* Feel like an app, not a web page: no long-press callouts, no stray text selection,
      no double-tap zoom delay. Fields stay selectable. */
-  body {
+  /* No long-press link previews or callouts (they give the website away). */
+  *,
+  a,
+  img {
     -webkit-touch-callout: none;
+  }
+  body {
     -webkit-user-select: none;
     user-select: none;
   }

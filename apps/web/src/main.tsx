@@ -8,6 +8,7 @@ import { RouterProvider } from "react-router";
 import { ApiError } from "./api/client";
 import { registerMutations } from "./api/mutations";
 import { router } from "./app/router";
+import { installNativeShell } from "./lib/appShell";
 import { keepUpToDate } from "./lib/updates";
 import { SessionProvider } from "./features/auth/session";
 import "./index.css";
@@ -36,6 +37,7 @@ const persister = createSyncStoragePersister({
   throttleTime: 1000,
 });
 
+installNativeShell();
 if (import.meta.env.PROD) keepUpToDate();
 
 createRoot(document.getElementById("root")!).render(

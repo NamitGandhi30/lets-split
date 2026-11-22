@@ -19,7 +19,7 @@ interface SheetProps {
 export function Sheet({ open, onClose, title, children, tone = "light" }: SheetProps) {
   return createPortal(
     <AnimatePresence>{open && <SheetBody key="sheet" onClose={onClose} title={title} tone={tone}>{children}</SheetBody>}</AnimatePresence>,
-    document.body,
+    document.getElementById("root") ?? document.body,
   );
 }
 
@@ -51,7 +51,7 @@ function SheetBody({ onClose, title, children, tone }: Omit<SheetProps, "open">)
 
   const light = tone === "light";
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="absolute inset-0 z-50">
       <motion.div
         className="absolute inset-0 bg-black/55"
         style={{ opacity: scrim }}
