@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Let's Split API",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Versioned REST API behind the Let's Split app. Money is always integer paise. Every write accepts an Idempotency-Key header, and ids for new groups and expenses are generated on the device."
   },
   "servers": [
@@ -1562,6 +1562,214 @@
           "unread",
           "data",
           "createdAt"
+        ]
+      },
+      "TripStats": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "totalSpentPaise": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000000,
+            "description": "Integer paise (₹1 = 100).",
+            "example": 428050
+          },
+          "expenseCount": {
+            "type": "integer"
+          },
+          "perDayPaise": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000000,
+            "description": "Average spend per trip day (rounded).",
+            "example": 428050
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "example": "2026-12-26"
+                },
+                "paise": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000000000,
+                  "description": "Integer paise (₹1 = 100).",
+                  "example": 428050
+                }
+              },
+              "required": [
+                "date",
+                "paise"
+              ]
+            },
+            "description": "Every day of the trip (from its dates, else first to last expense), in India time."
+          },
+          "peakDay": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "paise": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000000000,
+                "description": "Integer paise (₹1 = 100).",
+                "example": 428050
+              },
+              "index": {
+                "type": "integer"
+              },
+              "topDescription": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "date",
+              "paise",
+              "index",
+              "topDescription"
+            ],
+            "description": "Biggest-spend day; `index` is 0-based into `days`, `topDescription` its largest expense."
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "string"
+                },
+                "paise": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000000000,
+                  "description": "Integer paise (₹1 = 100).",
+                  "example": 428050
+                },
+                "percent": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "category",
+                "paise",
+                "percent"
+              ]
+            }
+          },
+          "paidBy": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "memberId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+                },
+                "paise": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000000000,
+                  "description": "Integer paise (₹1 = 100).",
+                  "example": 428050
+                }
+              },
+              "required": [
+                "memberId",
+                "paise"
+              ]
+            },
+            "description": "Who paid most, highest first."
+          },
+          "me": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "memberId": {
+                "type": "string",
+                "format": "uuid",
+                "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+              },
+              "sharePaise": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000000000,
+                "description": "Integer paise (₹1 = 100).",
+                "example": 428050
+              },
+              "paidPaise": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000000000,
+                "description": "Integer paise (₹1 = 100).",
+                "example": 428050
+              }
+            },
+            "required": [
+              "memberId",
+              "sharePaise",
+              "paidPaise"
+            ]
+          },
+          "biggest": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+              },
+              "description": {
+                "type": "string"
+              },
+              "amountPaise": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000000000,
+                "description": "Integer paise (₹1 = 100).",
+                "example": 428050
+              }
+            },
+            "required": [
+              "id",
+              "description",
+              "amountPaise"
+            ]
+          }
+        },
+        "required": [
+          "groupId",
+          "totalSpentPaise",
+          "expenseCount",
+          "perDayPaise",
+          "days",
+          "peakDay",
+          "categories",
+          "paidBy",
+          "me",
+          "biggest"
         ]
       }
     },
@@ -4062,6 +4270,83 @@
                   "required": [
                     "seenAt"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/groups/{groupId}/stats": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Trip stats: daily spend, categories, who paid most",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "groupId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripStats"
                 }
               }
             }

@@ -109,3 +109,10 @@ export const useInvite = (code?: string) =>
     retry: false,
     queryFn: () => unwrap(api.GET("/api/v1/invites/{code}", { params: { path: { code: code! } } })),
   });
+
+export const useStats = (groupId?: string) =>
+  useQuery({
+    queryKey: [...keys.group(groupId ?? ""), "stats"],
+    enabled: Boolean(groupId),
+    queryFn: () => unwrap(api.GET("/api/v1/groups/{groupId}/stats", path(groupId!))),
+  });

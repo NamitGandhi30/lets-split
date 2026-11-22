@@ -9,9 +9,9 @@ export const CATEGORIES = [
   { key: "travel", label: "Travel", color: "#3A7BD5" },
   { key: "stay", label: "Stay", color: "#2F6B4F" },
   { key: "drinks", label: "Drinks", color: "#8E5BD9" },
-  { key: "fun", label: "Fun", color: "#E2557A" },
+  { key: "fun", label: "Activities", color: "#E2557A" },
   { key: "shopping", label: "Shopping", color: "#C9A227" },
-  { key: "other", label: "Other", color: "#9AA59D" },
+  { key: "other", label: "Misc", color: "#9AA59D" },
 ] as const;
 export const tileColor = (category: string | null) => CATEGORIES.find((c) => c.key === category)?.color ?? "#9AA59D";
 

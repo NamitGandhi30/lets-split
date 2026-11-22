@@ -327,3 +327,24 @@ export const ActivityItem = z
 export const ActivityFeed = z
   .object({ items: z.array(ActivityItem), unreadCount: z.number().int(), seenAt: z.string() })
   .openapi("ActivityFeed");
+
+// ---------- stats ----------
+export const TripStats = z
+  .object({
+    groupId: Uuid,
+    totalSpentPaise: Paise,
+    expenseCount: z.number().int(),
+    perDayPaise: Paise.openapi({ description: "Average spend per trip day (rounded)." }),
+    days: z.array(z.object({ date: z.string().openapi({ example: "2026-12-26" }), paise: Paise })).openapi({
+      description: "Every day of the trip (from its dates, else first to last expense), in India time.",
+    }),
+    peakDay: z
+      .object({ date: z.string(), paise: Paise, index: z.number().int(), topDescription: z.string().nullable() })
+      .nullable()
+      .openapi({ description: "Biggest-spend day; `index` is 0-based into `days`, `topDescription` its largest expense." }),
+    categories: z.array(z.object({ category: z.string(), paise: Paise, percent: z.number() })),
+    paidBy: z.array(z.object({ memberId: Uuid, paise: Paise })).openapi({ description: "Who paid most, highest first." }),
+    me: z.object({ memberId: Uuid, sharePaise: Paise, paidPaise: Paise }).nullable(),
+    biggest: z.object({ id: Uuid, description: z.string(), amountPaise: Paise }).nullable(),
+  })
+  .openapi("TripStats");

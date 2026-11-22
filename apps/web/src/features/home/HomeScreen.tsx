@@ -9,6 +9,7 @@ import { Avatar } from "../../ui/Avatar";
 import { BellIcon, PlusIcon, UserPlusIcon } from "../../ui/icons";
 import { snappy } from "../../ui/motion";
 import { useToast } from "../../ui/Toast";
+import { setCurrentTripId, useCurrentTripId } from "../../lib/currentTrip";
 import { EmptyStack, TripStack } from "./TripStack";
 import { ExpenseRow, RecentSheet } from "./RecentSheet";
 import { SettleSheet, type SettleTarget } from "../settle/SettleSheet";
@@ -38,8 +39,14 @@ export function HomeScreen() {
   const activity = useActivity();
   const openGroups = useMemo(() => all.data?.filter((g) => !g.archivedAt), [all.data]);
   const groups = { ...all, data: openGroups };
-  const [current, setCurrent] = useState<Group | null>(null);
-  const trip = current && openGroups?.some((g) => g.id === current.id) ? (openGroups.find((g) => g.id === current.id) ?? null) : (openGroups?.[0] ?? null);
+  const currentId = useCurrentTripId();
+  const trip = openGroups?.find((g) => g.id === currentId) ?? openGroups?.[0] ?? null;
+  // The stack starts with the trip you last looked at (shared with Stats).
+  const firstId = useMemo(() => trip?.id, [openGroups?.map((g) => g.id).join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ordered = useMemo(
+    () => (openGroups ? [...openGroups].sort((a, b) => Number(b.id === firstId) - Number(a.id === firstId)) : []),
+    [openGroups, firstId],
+  );
   const [settle, setSettle] = useState<SettleTarget | null>(null);
   const newTrip = params.get("new") === "1";
   const setNewTrip = (o: boolean) =>
@@ -181,7 +188,7 @@ export function HomeScreen() {
         {groups.isPending ? (
           <div className="h-[78px] w-[min(300px,calc(100%-28px))] animate-pulse rounded-[20px] bg-surface" />
         ) : groups.data?.length ? (
-          <TripStack groups={groups.data} onChange={setCurrent} />
+          <TripStack groups={ordered} onChange={(g) => setCurrentTripId(g.id)} />
         ) : (
           <button type="button" onClick={() => setNewTrip(true)} className="block text-left">
             <EmptyStack />

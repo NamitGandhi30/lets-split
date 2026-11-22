@@ -2084,6 +2084,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/groups/{groupId}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Trip stats: daily spend, categories, who paid most */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    groupId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Stats */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TripStats"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2653,6 +2727,97 @@ export interface components {
                 [key: string]: unknown;
             };
             createdAt: string;
+        };
+        TripStats: {
+            /**
+             * Format: uuid
+             * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+             */
+            groupId: string;
+            /**
+             * @description Integer paise (₹1 = 100).
+             * @example 428050
+             */
+            totalSpentPaise: number;
+            expenseCount: number;
+            /**
+             * @description Average spend per trip day (rounded).
+             * @example 428050
+             */
+            perDayPaise: number;
+            /** @description Every day of the trip (from its dates, else first to last expense), in India time. */
+            days: {
+                /** @example 2026-12-26 */
+                date: string;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                paise: number;
+            }[];
+            /** @description Biggest-spend day; `index` is 0-based into `days`, `topDescription` its largest expense. */
+            peakDay: {
+                date: string;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                paise: number;
+                index: number;
+                topDescription: string | null;
+            } | null;
+            categories: {
+                category: string;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                paise: number;
+                percent: number;
+            }[];
+            /** @description Who paid most, highest first. */
+            paidBy: {
+                /**
+                 * Format: uuid
+                 * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+                 */
+                memberId: string;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                paise: number;
+            }[];
+            me: {
+                /**
+                 * Format: uuid
+                 * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+                 */
+                memberId: string;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                sharePaise: number;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                paidPaise: number;
+            } | null;
+            biggest: {
+                /**
+                 * Format: uuid
+                 * @example 3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11
+                 */
+                id: string;
+                description: string;
+                /**
+                 * @description Integer paise (₹1 = 100).
+                 * @example 428050
+                 */
+                amountPaise: number;
+            } | null;
         };
     };
     responses: never;

@@ -133,6 +133,20 @@ describe.skipIf(!enabled)("phase 2 flow (two accounts)", () => {
     await call(bob, "POST", `/groups/${groupId}/settlements`, { ...body, id: crypto.randomUUID() });
   });
 
+  it("stats: totals, days, categories and who paid all add up", async () => {
+    const r = await call(bob, "GET", `/groups/${groupId}/stats`);
+    expect(r.status).toBe(200);
+    const st = await j(r);
+    expect(st.totalSpentPaise).toBe(7000); // cab 2000 + four 1000s + two payers 1000
+    expect(st.expenseCount).toBe(6);
+    expect(st.days.reduce((s: number, d: J) => s + d.paise, 0)).toBe(7000);
+    expect(st.categories.reduce((s: number, c: J) => s + c.paise, 0)).toBe(7000);
+    expect(st.paidBy.reduce((s: number, p: J) => s + p.paise, 0)).toBe(7000);
+    expect(st.me.memberId).toBe(ph);
+    expect(st.biggest.description).toBe("Cab to Solang");
+    expect((await call(bob, "GET", `/groups/${crypto.randomUUID()}/stats`)).status).toBe(404);
+  });
+
   it("alerts: alice sees bob's actions as unread; marking seen clears them", async () => {
     const f = await j(await call(alice, "GET", `/activity?groupId=${groupId}`));
     const kinds = f.items.map((i: J) => i.kind);
