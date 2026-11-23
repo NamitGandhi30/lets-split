@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
+import { BackIcon } from "../../ui/icons";
 import { snappy, tf } from "../../ui/motion";
 
 /** The split-ring mark from the app icon. */
@@ -30,11 +31,16 @@ const rise = (i: number) => ({
 });
 
 /** Dark hero on top, light sheet rising from the bottom, the same two-layer look as Home. */
-export function AuthLayout({ eyebrow, title, sub, children }: { eyebrow: ReactNode; title: ReactNode; sub: ReactNode; children: ReactNode }) {
+export function AuthLayout({ eyebrow, title, sub, children, onBack }: { eyebrow: ReactNode; title: ReactNode; sub: ReactNode; children: ReactNode; onBack?: () => void }) {
   return (
     <div className="relative flex min-h-full flex-col bg-chrome pt-safe">
       <div className="flex flex-1 flex-col px-6 pt-8 pb-8">
         <motion.div {...rise(0)} className="flex items-center gap-2.5">
+          {onBack && (
+            <button type="button" aria-label="Back" onClick={onBack} className="mr-1 grid h-10 w-10 place-items-center rounded-full bg-surface">
+              <BackIcon />
+            </button>
+          )}
           <Mark size={34} />
           <span className="text-[17px] font-semibold tracking-[-0.01em]">Let's Split</span>
         </motion.div>

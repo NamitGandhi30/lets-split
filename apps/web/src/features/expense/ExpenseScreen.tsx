@@ -1,4 +1,5 @@
 import { formatINR } from "@lets-split/core";
+import { currencyOf, formatMoney, rateLine } from "../../lib/fx";
 import { useBack } from "../../lib/useBack";
 import { accentOr, inkOn } from "../../lib/color";
 import { motion } from "motion/react";
@@ -115,6 +116,12 @@ export function ExpenseScreen() {
         <div className="mt-1.5 flex justify-center">
           <Amount paise={e.amountPaise} size={{ cur: 24, whole: 52, dec: 20 }} />
         </div>
+        {e.fx && (
+          <p className="mt-0.5 text-[13px] font-medium text-muted">
+            <span aria-hidden="true">{currencyOf(e.fx.currency).flag} </span>
+            <b className="font-semibold text-ink">{formatMoney(e.fx.amount, e.fx.currency)}</b> on the bill · {rateLine(e.fx.currency, e.fx.rate)}
+          </p>
+        )}
         <div className="mt-2.5 inline-flex items-center gap-2 rounded-full bg-card py-1.5 pr-3 pl-1.5 text-[13px] font-medium">
           {payer ? <Avatar seed={payer.id} avatarKey={payer.avatarKey} size={26} /> : <span className="grid h-[26px] w-[26px] place-items-center rounded-full bg-sheet text-[11px] font-bold">{e.payers.length}</span>}
           Paid by {payer ? nameOf(payer, "you") : `${e.payers.length} people`} · {when(e.spentAt)} ·{" "}

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Let's Split API",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "description": "Versioned REST API behind the Let's Split app. Money is always integer paise. Every write accepts an Idempotency-Key header, and ids for new groups and expenses are generated on the device."
   },
   "servers": [
@@ -560,6 +560,9 @@
           "currency": {
             "type": "string"
           },
+          "fx": {
+            "$ref": "#/components/schemas/ExpenseFx"
+          },
           "splitType": {
             "type": "string",
             "enum": [
@@ -654,6 +657,7 @@
           "category",
           "amountPaise",
           "currency",
+          "fx",
           "splitType",
           "spentAt",
           "notes",
@@ -664,6 +668,45 @@
           "payers",
           "shares"
         ]
+      },
+      "ExpenseFx": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "example": "USD",
+            "description": "ISO 4217 code"
+          },
+          "amount": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000000000,
+            "example": 20.5,
+            "description": "Amount on the bill, in that currency"
+          },
+          "rate": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000,
+            "example": 84.12,
+            "description": "Rupees per one unit of the currency"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the rate was published"
+          }
+        },
+        "required": [
+          "currency",
+          "amount",
+          "rate"
+        ],
+        "additionalProperties": false
       },
       "ExpenseCreate": {
         "type": "object",
@@ -727,6 +770,16 @@
           },
           "split": {
             "$ref": "#/components/schemas/SplitInput"
+          },
+          "fx": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExpenseFx"
+              },
+              {
+                "description": "Set when the bill was in another currency; amountPaise is the converted total."
+              }
+            ]
           }
         },
         "required": [
@@ -1088,6 +1141,16 @@
           },
           "split": {
             "$ref": "#/components/schemas/SplitInput"
+          },
+          "fx": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExpenseFx"
+              },
+              {
+                "description": "Set when the bill was in another currency; amountPaise is the converted total."
+              }
+            ]
           }
         },
         "required": [
@@ -2055,6 +2118,45 @@
         },
         "required": [
           "memberId"
+        ]
+      },
+      "FxRates": {
+        "type": "object",
+        "properties": {
+          "base": {
+            "type": "string",
+            "enum": [
+              "INR"
+            ]
+          },
+          "inrPer": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Rupees per one unit of each currency",
+            "example": {
+              "USD": 84.12,
+              "THB": 2.46
+            }
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "When the source last published these rates"
+          },
+          "fetchedAt": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "base",
+          "inrPer",
+          "updatedAt",
+          "fetchedAt",
+          "source"
         ]
       }
     },
@@ -5112,6 +5214,102 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fx/rates": {
+      "get": {
+        "tags": [
+          "fx"
+        ],
+        "summary": "Latest exchange rates into rupees",
+        "description": "Rupees per one unit of each currency, from free public sources (refreshed every 30 minutes; the sources publish daily).",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FxRates"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "No source answered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }

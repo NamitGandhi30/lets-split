@@ -4,6 +4,7 @@ import { AlertsScreen } from "../features/alerts/AlertsScreen";
 import { CodeScreen } from "../features/auth/CodeScreen";
 import { EmailScreen } from "../features/auth/EmailScreen";
 import { ProfileScreen } from "../features/auth/ProfileScreen";
+import { WelcomeScreen } from "../features/auth/WelcomeScreen";
 import { RedirectIfSignedIn, RequireAuth } from "../features/auth/session";
 import { ExpenseScreen } from "../features/expense/ExpenseScreen";
 import { OnboardingScreen } from "../features/onboarding/OnboardingScreen";
@@ -15,7 +16,8 @@ import { TripScreen } from "../features/trips/TripScreen";
 import { AppShell } from "./AppShell";
 
 export const router = createBrowserRouter([
-  { path: "/login", element: <RedirectIfSignedIn><EmailScreen /></RedirectIfSignedIn> },
+  { path: "/login", element: <RedirectIfSignedIn><WelcomeScreen /></RedirectIfSignedIn> },
+  { path: "/login/email", element: <RedirectIfSignedIn><EmailScreen /></RedirectIfSignedIn> },
   { path: "/login/code", element: <RedirectIfSignedIn><CodeScreen /></RedirectIfSignedIn> },
   {
     path: "/",

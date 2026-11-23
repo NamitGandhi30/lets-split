@@ -7,6 +7,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import type { Expense, Group, Member, SplitInput } from "../../api/client";
 import { useExpense, useGroups, useMe, useMembers } from "../../api/hooks";
 import { useWrite, withKey } from "../../api/mutations";
+import { ago, CURRENCIES, currencyOf, lastCurrency, rateLine, rememberCurrency, toInrPaise, useFxRates } from "../../lib/fx";
 import { CATEGORIES, firstName, tileColor } from "../../lib/people";
 import { newId } from "../../lib/uuid";
 import { Avatar } from "../../ui/Avatar";
@@ -113,7 +114,9 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
   const active = useMemo(() => (membersQ.data ?? []).filter((m) => !m.removedAt), [membersQ.data]);
   const myId = group.myMemberId;
 
-  const [amount, setAmount] = useState(existing ? String(existing.amountPaise / 100) : "");
+  const [cur, setCur] = useState<string>(() => existing?.fx?.currency ?? (existing ? "INR" : lastCurrency(group.id)));
+  const [amount, setAmount] = useState(existing ? String(existing.fx?.amount ?? existing.amountPaise / 100) : "");
+  const fxQ = useFxRates();
   const [description, setDescription] = useState(existing?.description ?? "");
   const [category, setCategory] = useState<string>(existing?.category ?? "food");
   const [date, setDate] = useState(existing ? existing.spentAt.slice(0, 10) : today());
@@ -126,7 +129,7 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
       ? Object.fromEntries(existing.payers.map((p) => [p.memberId, String(p.amountPaise / 100)]))
       : null,
   );
-  const [sheet, setSheet] = useState<null | "trip" | "payer" | "category" | "more">(null);
+  const [sheet, setSheet] = useState<null | "trip" | "payer" | "category" | "more" | "currency">(null);
   const [stamped, setStamped] = useState(false);
   const [nudge, setNudge] = useState<null | "amount" | "name">(null);
   const amountRef = useRef<HTMLInputElement>(null);
@@ -147,7 +150,12 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
     setMore(init.more);
   }, [active, existing]);
 
-  const total = toPaise(amount || "0");
+  const foreign = cur !== "INR";
+  // Editing keeps the rate the bill was saved with, so fixing a name doesn't move anyone's share.
+  const keptRate = existing?.fx?.currency === cur ? existing.fx : null;
+  const rate = !foreign ? 1 : (keptRate?.rate ?? fxQ.data?.inrPer[cur]);
+  const typed = Number(amount || "0");
+  const total = !foreign ? toPaise(amount || "0") : rate ? toInrPaise(typed, rate) : NaN;
   const validTotal = Number.isFinite(total) && total > 0 && total <= MAX_PAISE;
   const included = active.filter((m) => on.has(m.id));
   const colorIndex = (m: Member) => Math.max(0, active.findIndex((x) => x.id === m.id));
@@ -270,7 +278,9 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
       spentAt,
       payers: payers ? payerList : undefined,
       split,
+      fx: foreign && rate ? { currency: cur, amount: typed, rate, at: keptRate?.at ?? fxQ.data?.updatedAt } : undefined,
     };
+    rememberCurrency(group.id, cur);
     // A failure shows up later as a toast from useWriteFailures, even after this screen has closed.
     if (existing) update.mutate(withKey({ groupId: group.id, expenseId: existing.id, body }));
     else add.mutate(withKey({ groupId: group.id, body: { id: id.current, ...body } }));
@@ -313,9 +323,25 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
       </div>
 
       <div className="mt-4 px-5 text-center">
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.94 }}
+          transition={snappy}
+          onClick={() => setSheet("currency")}
+          aria-label={`Currency: ${currencyOf(cur).name}. Change`}
+          className="mx-auto mb-1 flex h-7 items-center gap-1.5 rounded-full bg-card pr-2.5 pl-2 text-[12.5px] font-semibold text-ink ring-1 ring-black/5"
+        >
+          <span className="text-[14px] leading-none">{currencyOf(cur).flag}</span>
+          {cur}
+          <svg width="9" height="9" viewBox="0 0 10 10" aria-hidden="true" className="opacity-50">
+            <path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </motion.button>
         <motion.label animate={nudge === "amount" ? { x: [0, -8, 8, -4, 0] } : { x: 0 }} transition={{ duration: 0.4 }} className="flex cursor-text items-baseline justify-center font-bold tracking-[-0.02em]">
-          <span className="sr-only">Amount in rupees</span>
-          <span className={`text-[26px] ${validTotal ? "" : "text-ink/30"}`}>₹</span>
+          <span className="sr-only">Amount in {currencyOf(cur).name}</span>
+          <motion.span key={cur} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={bouncy} className={`text-[26px] whitespace-pre ${typed > 0 ? "" : "text-ink/30"}`}>
+            {currencyOf(cur).symbol.trimEnd()}
+          </motion.span>
           <input
             ref={amountRef}
             data-autofocus={existing ? undefined : true}
@@ -328,8 +354,15 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
             className="min-w-[1ch] bg-transparent text-center text-[58px] leading-[1.1] outline-none placeholder:text-ink/25"
             style={{ width: `${Math.max(1, (amount || "0").length) * 0.62 + 0.1}em` }}
           />
-          <span className="text-[22px] font-medium text-[#8D92A6]">{amount.includes(".") ? "" : parts.decimal}</span>
+          <span className="text-[22px] font-medium text-[#8D92A6]">{amount.includes(".") || foreign ? "" : parts.decimal}</span>
         </motion.label>
+        <AnimatePresence initial={false}>
+          {foreign && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={snappy} className="overflow-hidden">
+              <FxLine code={cur} rate={rate} total={validTotal ? total : 0} kept={Boolean(keptRate)} updatedAt={fxQ.data?.updatedAt} loading={fxQ.isPending} failed={fxQ.isError} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <motion.label
           animate={nudge === "name" ? { x: [0, -8, 8, -4, 0] } : { x: 0 }}
@@ -541,6 +574,18 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
         </div>
       </Sheet>
 
+      <Sheet open={sheet === "currency"} onClose={() => setSheet(null)} title="Currency on the bill">
+        <CurrencyPicker
+          value={cur}
+          inrPer={fxQ.data?.inrPer}
+          updatedAt={fxQ.data?.updatedAt}
+          onPick={(c) => {
+            setCur(c);
+            setSheet(null);
+          }}
+        />
+      </Sheet>
+
       <Sheet open={sheet === "category"} onClose={() => setSheet(null)} title="Category">
         <div className="grid grid-cols-2 gap-2">
           {CATEGORIES.map((c) => (
@@ -590,6 +635,83 @@ function AddForm({ group, groups, existing }: { group: Group; groups: Group[]; e
           </>
         )}
       </Sheet>
+    </div>
+  );
+}
+
+/** "≈ ₹1,682.40" with the rate it used and how fresh that rate is. */
+function FxLine({ code, rate, total, kept, updatedAt, loading, failed }: { code: string; rate?: number; total: number; kept: boolean; updatedAt?: string; loading: boolean; failed: boolean }) {
+  if (!rate) {
+    return (
+      <p className="pt-1 text-[13px] font-medium text-muted">
+        {loading ? "Getting today's rate…" : failed ? "Couldn't get exchange rates. Connect once and they'll stay on your phone." : `No rate for ${code} yet`}
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center gap-1 pt-0.5">
+      <b className="text-[17px] font-bold text-ink tabular-nums">≈ {formatINR(total, { decimals: "auto" })}</b>
+      <span className="flex items-center gap-1.5 text-[12px] font-medium text-muted">
+        {!kept && (
+          <span className="relative grid h-2 w-2 place-items-center" aria-hidden="true">
+            <span className="absolute inset-0 animate-ping rounded-full bg-pos/60" />
+            <span className="h-1.5 w-1.5 rounded-full bg-pos" />
+          </span>
+        )}
+        {rateLine(code, rate)} · {kept ? "rate when saved" : updatedAt ? `updated ${ago(updatedAt)}` : "live"}
+      </span>
+    </div>
+  );
+}
+
+function CurrencyPicker({ value, inrPer, updatedAt, onPick }: { value: string; inrPer?: Record<string, number>; updatedAt?: string; onPick: (code: string) => void }) {
+  const [q, setQ] = useState("");
+  const needle = q.trim().toLowerCase();
+  const known = new Set(CURRENCIES.map((c) => c.code));
+  // Anything the rates feed knows, even if it isn't in our list of travel favourites.
+  const extra = needle.length >= 2 && inrPer ? Object.keys(inrPer).filter((k) => !known.has(k) && k.toLowerCase().startsWith(needle)) : [];
+  const list = [
+    ...CURRENCIES.filter((c) => !needle || c.code.toLowerCase().includes(needle) || c.name.toLowerCase().includes(needle)),
+    ...extra.map(currencyOf),
+  ];
+  return (
+    <div>
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search: baht, AED, euro…"
+        aria-label="Search currencies"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        className="h-12 w-full rounded-[16px] bg-card px-4 text-[16px] font-medium text-ink outline-none ring-1 ring-black/5 placeholder:text-[#A2A7B2] focus:ring-2 focus:ring-cobalt"
+      />
+      <p className="mt-2 flex items-center gap-1.5 px-1 text-[12px] text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-pos" aria-hidden="true" />
+        {updatedAt ? `Live rates · updated ${ago(updatedAt)}` : "Live rates"} · split and settled in ₹
+      </p>
+      <div className="no-scrollbar mt-2 max-h-[52vh] overflow-y-auto rounded-[var(--radius-card)] bg-card px-2 py-1">
+        {list.map((c) => {
+          const r = c.code === "INR" ? undefined : inrPer?.[c.code];
+          return (
+            <button
+              key={c.code}
+              type="button"
+              onClick={() => onPick(c.code)}
+              className="flex w-full items-center gap-3 border-b border-hairline px-2 py-2.5 text-left last:border-b-0"
+            >
+              <span className="text-[22px] leading-none">{c.flag}</span>
+              <span className="min-w-0 flex-1">
+                <b className="block text-[14.5px] font-semibold">{c.code}</b>
+                <span className="block truncate text-[12px] text-muted">{c.name}</span>
+              </span>
+              {r ? <span className="text-[12px] font-medium text-muted tabular-nums">{rateLine(c.code, r)}</span> : null}
+              {value === c.code && <CheckIcon width={16} height={16} />}
+            </button>
+          );
+        })}
+        {!list.length && <p className="py-6 text-center text-[13px] text-muted">No currency matches “{q}”</p>}
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { envFromRuntime, verifyWithSupabase, type AppEnv, type Env, type VerifyT
 import { errorBody, handleError } from "./errors.ts";
 import { idempotency, requireAuth } from "./middleware.ts";
 import { expenseRoutes } from "./routes/expenses.ts";
+import { fxRoutes } from "./routes/fx.ts";
 import { groupRoutes } from "./routes/groups.ts";
 import { meRoutes } from "./routes/me.ts";
 import { pushRoutes } from "./routes/push.ts";
@@ -12,7 +13,7 @@ import { statsRoutes } from "./routes/stats.ts";
 import { wrappedRoutes } from "./routes/wrapped.ts";
 import { router, validationHook } from "./routes/util.ts";
 
-export const API_VERSION = "0.4.0";
+export const API_VERSION = "0.5.0";
 
 export interface AppOptions {
   env?: () => Env;
@@ -71,6 +72,7 @@ export function createApp(opts: AppOptions = {}) {
   v1.route("/", statsRoutes);
   v1.route("/", wrappedRoutes);
   v1.route("/", pushRoutes);
+  v1.route("/", fxRoutes);
   app.route("/v1", v1);
 
   app.notFound((c) => c.json(errorBody("NOT_FOUND", "No such endpoint."), 404));

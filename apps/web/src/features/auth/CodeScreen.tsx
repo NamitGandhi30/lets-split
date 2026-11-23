@@ -65,7 +65,7 @@ export function CodeScreen() {
     setLeft(RESEND_AFTER);
   }
 
-  if (!email) return <Navigate to="/login" replace />;
+  if (!email) return <Navigate to="/login/email" replace />;
 
   return (
     <AuthLayout
@@ -130,7 +130,7 @@ export function CodeScreen() {
         </Cta>
 
         <div className="mt-4 flex items-center justify-between text-[13px] font-medium">
-          <button type="button" onClick={() => nav("/login")} className="text-muted">
+          <button type="button" onClick={() => nav("/login/email")} className="text-muted">
             Use a different email
           </button>
           <button type="button" onClick={resend} disabled={left > 0} className="text-ink disabled:text-muted">

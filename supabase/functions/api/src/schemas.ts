@@ -167,6 +167,19 @@ export const SplitInput = z
   ])
   .openapi("SplitInput");
 
+export const Currency = z.string().regex(/^[A-Z]{3}$/).openapi({ example: "USD", description: "ISO 4217 code" });
+
+/** The bill as it was in another currency. The expense itself (amountPaise, shares) is always in INR. */
+export const ExpenseFx = z
+  .object({
+    currency: Currency.refine((c) => c !== "INR", "Leave fx out for rupees"),
+    amount: z.number().positive().max(1e12).openapi({ example: 20.5, description: "Amount on the bill, in that currency" }),
+    rate: z.number().positive().max(1e6).openapi({ example: 84.12, description: "Rupees per one unit of the currency" }),
+    at: z.iso.datetime({ offset: true }).optional().openapi({ description: "When the rate was published" }),
+  })
+  .strict()
+  .openapi("ExpenseFx");
+
 export const ExpenseCreate = z
   .object({
     id: Uuid.openapi({ description: "Generated on the device; replaying it never creates a duplicate." }),
@@ -182,6 +195,7 @@ export const ExpenseCreate = z
       .optional()
       .openapi({ description: "Who paid. Defaults to the caller paying the whole amount." }),
     split: SplitInput,
+    fx: ExpenseFx.optional().openapi({ description: "Set when the bill was in another currency; amountPaise is the converted total." }),
   })
   .strict()
   .openapi("ExpenseCreate");
@@ -194,6 +208,7 @@ export const Expense = z
     category: z.string().nullable(),
     amountPaise: Paise,
     currency: z.string(),
+    fx: ExpenseFx.nullable(),
     splitType: z.enum(["equal", "exact", "percent", "shares", "adjustment", "itemized"]),
     splitMeta: z.unknown(),
     spentAt: z.string(),
@@ -376,3 +391,14 @@ export const Wrapped = z
     biggest: z.object({ description: z.string(), amountPaise: Paise }).nullable(),
   })
   .openapi("Wrapped");
+
+// ---------- exchange rates ----------
+export const FxRates = z
+  .object({
+    base: z.literal("INR"),
+    inrPer: z.record(z.string(), z.number()).openapi({ description: "Rupees per one unit of each currency", example: { USD: 84.12, THB: 2.46 } }),
+    updatedAt: z.string().openapi({ description: "When the source last published these rates" }),
+    fetchedAt: z.string(),
+    source: z.string(),
+  })
+  .openapi("FxRates");

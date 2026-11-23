@@ -165,6 +165,7 @@ expenseRoutes.openapi(
       p_category: b.category ?? null,
       p_spent_at: b.spentAt ?? new Date().toISOString(),
       p_notes: b.notes ?? null,
+      ...(b.fx ? { p_fx: b.fx } : {}),
     });
     if (res.error) throw res.error.code === "42501" ? notFound("Group not found") : fromPg(res.error);
     const replayed = (res.data as { replayed?: boolean } | null)?.replayed === true;
@@ -330,6 +331,8 @@ expenseRoutes.openapi(
       p_category: b.category ?? null,
       p_spent_at: b.spentAt ?? null,
       p_notes: b.notes ?? null,
+      // Only sent when there's foreign currency to set or clear, so rupee edits never depend on it.
+      ...(b.fx || existing.fx ? { p_fx: b.fx ?? null } : {}),
     });
     if (error) throw fromPg(error);
     return c.json(toExpense(await loadExpense(db, expenseId)), 200);
@@ -414,7 +417,7 @@ expenseRoutes.openapi(
 );
 
 const TRACKED: Record<string, string> = {
-  description: "name", amount_paise: "amount", split_type: "split", split_meta: "split", category: "category", spent_at: "date", notes: "notes",
+  description: "name", amount_paise: "amount", fx: "amount", split_type: "split", split_meta: "split", category: "category", spent_at: "date", notes: "notes",
 };
 
 interface HistoryRow { id: number; op: "insert" | "update" | "delete" | "restore"; actor_id: string | null; before: unknown; after: unknown; created_at: string }

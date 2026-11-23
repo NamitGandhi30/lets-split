@@ -70,7 +70,7 @@ export function previewExpense(groupId: string, b: ExpenseCreate, myMemberId: st
   const now = new Date().toISOString();
   return {
     id: b.id, groupId, description: b.description, category: b.category ?? null, amountPaise: b.amountPaise,
-    currency: "INR", splitType: b.split.type, splitMeta: b.split, spentAt: b.spentAt ?? now, notes: b.notes ?? null,
+    currency: "INR", fx: b.fx ?? null, splitType: b.split.type, splitMeta: b.split, spentAt: b.spentAt ?? now, notes: b.notes ?? null,
     createdBy: me, createdAt: now, updatedAt: now, deletedAt: null,
     payers: Object.entries(c.payers).map(([memberId, amountPaise]) => ({ memberId, amountPaise })),
     shares: Object.entries(c.shares).map(([memberId, amountPaise]) => ({ memberId, amountPaise })),

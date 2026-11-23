@@ -61,14 +61,9 @@ export function EmailScreen() {
 
   return (
     <AuthLayout
-      eyebrow="Trips · friends · UPI"
-      title={
-        <>
-          Split the trip,
-          <br />
-          not the friendship.
-        </>
-      }
+      onBack={() => nav("/login", { replace: true })}
+      eyebrow="Sign in or sign up"
+      title="What's your email?"
       sub={`We'll email you a ${env.otpLength}-digit code. No passwords to remember.`}
     >
       <form onSubmit={submit} noValidate>

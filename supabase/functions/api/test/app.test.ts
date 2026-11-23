@@ -45,11 +45,13 @@ describe("public endpoints", () => {
         "/api/v1/push/config",
         "/api/v1/push/subscription",
         "/api/v1/groups/{groupId}/nudges",
+        "/api/v1/fx/rates",
       ].sort(),
     );
     expect(Object.keys(doc.paths["/api/v1/groups/{groupId}/expenses"]!).sort()).toEqual(["get", "post"]);
     expect(doc.components.schemas).toHaveProperty("ExpenseCreate");
     expect(doc.components.schemas).toHaveProperty("Balances");
+    expect(doc.components.schemas).toHaveProperty("ExpenseFx");
   });
 
   it("answers CORS preflight", async () => {

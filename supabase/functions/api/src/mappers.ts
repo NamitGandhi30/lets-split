@@ -91,6 +91,7 @@ export interface ExpenseRow {
   category: string | null;
   amount_paise: number;
   currency: string;
+  fx: { currency: string; amount: number; rate: number; at?: string } | null;
   split_type: "equal" | "exact" | "percent" | "shares" | "adjustment" | "itemized";
   split_meta: unknown;
   spent_at: string;
@@ -112,6 +113,7 @@ export const toExpense = (e: ExpenseRow) => ({
   category: e.category,
   amountPaise: Number(e.amount_paise),
   currency: e.currency.trim(),
+  fx: e.fx ?? null,
   splitType: e.split_type,
   splitMeta: e.split_meta,
   spentAt: e.spent_at,

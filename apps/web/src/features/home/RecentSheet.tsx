@@ -1,4 +1,5 @@
 import { formatINR } from "@lets-split/core";
+import { formatMoney } from "../../lib/fx";
 import { animate, motion, useDragControls, useMotionValue, useReducedMotion, type PanInfo } from "motion/react";
 import { useEffect, useRef, type ReactNode } from "react";
 import type { Expense, Member } from "../../api/client";
@@ -53,6 +54,7 @@ export function ExpenseRow({ e, i, members, myMemberId }: { e: Expense; i: numbe
         <b className="block truncate text-[14px] font-semibold">{e.description}</b>
         <span className="text-[12px] text-muted">
           Paid by {payer} · {when(e.spentAt)}
+          {e.fx ? ` · ${formatMoney(e.fx.amount, e.fx.currency)}` : ""}
         </span>
       </div>
       <div className="text-right">

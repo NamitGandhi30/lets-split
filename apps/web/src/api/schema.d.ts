@@ -2536,6 +2536,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/fx/rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Latest exchange rates into rupees
+         * @description Rupees per one unit of each currency, from free public sources (refreshed every 30 minutes; the sources publish daily).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Rates */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FxRates"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not signed in */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Not found, or not a member of this group */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description The request doesn't add up */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No source answered */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2716,6 +2805,7 @@ export interface components {
              */
             amountPaise: number;
             currency: string;
+            fx: components["schemas"]["ExpenseFx"];
             /** @enum {string} */
             splitType: "equal" | "exact" | "percent" | "shares" | "adjustment" | "itemized";
             splitMeta?: unknown;
@@ -2754,6 +2844,28 @@ export interface components {
                 amountPaise: number;
             }[];
         };
+        ExpenseFx: {
+            /**
+             * @description ISO 4217 code
+             * @example USD
+             */
+            currency: string;
+            /**
+             * @description Amount on the bill, in that currency
+             * @example 20.5
+             */
+            amount: number;
+            /**
+             * @description Rupees per one unit of the currency
+             * @example 84.12
+             */
+            rate: number;
+            /**
+             * Format: date-time
+             * @description When the rate was published
+             */
+            at?: string;
+        } | null;
         ExpenseCreate: {
             /**
              * Format: uuid
@@ -2785,6 +2897,7 @@ export interface components {
                 amountPaise: number;
             }[];
             split: components["schemas"]["SplitInput"];
+            fx?: components["schemas"]["ExpenseFx"] & unknown;
         };
         SplitInput: {
             /** @enum {string} */
@@ -2911,6 +3024,7 @@ export interface components {
                 amountPaise: number;
             }[];
             split: components["schemas"]["SplitInput"];
+            fx?: components["schemas"]["ExpenseFx"] & unknown;
         };
         Comment: {
             /**
@@ -3301,6 +3415,24 @@ export interface components {
              */
             memberId: string;
             amountPaise?: number;
+        };
+        FxRates: {
+            /** @enum {string} */
+            base: "INR";
+            /**
+             * @description Rupees per one unit of each currency
+             * @example {
+             *       "USD": 84.12,
+             *       "THB": 2.46
+             *     }
+             */
+            inrPer: {
+                [key: string]: number;
+            };
+            /** @description When the source last published these rates */
+            updatedAt: string;
+            fetchedAt: string;
+            source: string;
         };
     };
     responses: never;
