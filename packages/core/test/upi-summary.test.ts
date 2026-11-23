@@ -29,6 +29,8 @@ describe("UPI links", () => {
     expect(l.gpay).toBe("gpay://upi/pay?pa=meera@paytm&am=420.00&cu=INR");
     expect(l.phonepe).toBe("phonepe://pay?pa=meera@paytm&am=420.00&cu=INR");
     expect(l.paytm).toBe("paytmmp://pay?pa=meera@paytm&am=420.00&cu=INR");
+    expect(l.cred).toBe("credpay://upi/pay?pa=meera@paytm&am=420.00&cu=INR");
+    expect(l.bhim).toBe("bhim://upi/pay?pa=meera@paytm&am=420.00&cu=INR");
   });
 
   it("validates UPI IDs and amounts", () => {

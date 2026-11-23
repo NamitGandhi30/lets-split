@@ -56,6 +56,8 @@ export default defineConfig(({ mode }) => {
           globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
           // API responses are cached by TanStack Query, never by the service worker.
           navigateFallbackDenylist: [/^\/functions\//],
+          // Lock screen notifications: push + notificationclick handlers.
+          importScripts: ["push-sw.js"],
         },
         devOptions: { enabled: false },
       }),

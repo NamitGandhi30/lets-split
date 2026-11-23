@@ -57,6 +57,8 @@ export interface UpiAppLinks {
   gpay: string;
   phonepe: string;
   paytm: string;
+  cred: string;
+  bhim: string;
 }
 
 /** iOS has no app chooser for `upi://`, so each app gets its own scheme. */
@@ -67,5 +69,7 @@ export function buildUpiAppLinks(p: UpiPayment): UpiAppLinks {
     gpay: `gpay://upi/pay?${q}`,
     phonepe: `phonepe://pay?${q}`,
     paytm: `paytmmp://pay?${q}`,
+    cred: `credpay://upi/pay?${q}`,
+    bhim: `bhim://upi/pay?${q}`,
   };
 }

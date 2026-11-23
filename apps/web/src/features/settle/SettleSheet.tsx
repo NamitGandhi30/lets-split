@@ -14,7 +14,7 @@ import { bouncy, snappy, tf } from "../../ui/motion";
 import { Qr, qrPng } from "../../ui/Qr";
 import { Sheet } from "../../ui/Sheet";
 import { useToast } from "../../ui/Toast";
-import { remindText, whatsappUrl } from "./remind";
+import { useRemind, whatsappUrl } from "./remind";
 
 export type SettleTarget = { from: string; to: string; amountPaise: number };
 
@@ -35,10 +35,30 @@ const APPS = [
   { key: "gpay", label: "GPay", bg: "#FFFFFF", fg: "#1A73E8" },
   { key: "phonepe", label: "PhonePe", bg: "#5F259F", fg: "#FFFFFF" },
   { key: "paytm", label: "Paytm", bg: "#00BAF2", fg: "#FFFFFF" },
+  { key: "cred", label: "CRED", bg: "#111111", fg: "#FFFFFF" },
+  { key: "bhim", label: "BHIM", bg: "#FFFFFF", fg: "#E46D1E" },
 ] as const;
+
+/** UPI IDs you typed for friends who haven't added one, remembered on this phone only. */
+const typedKey = (memberId: string) => `ls:upi:${memberId}`;
+function readTyped(memberId: string): string {
+  try {
+    return localStorage.getItem(typedKey(memberId)) ?? "";
+  } catch {
+    return "";
+  }
+}
+function writeTyped(memberId: string, vpa: string) {
+  try {
+    localStorage.setItem(typedKey(memberId), vpa);
+  } catch {
+    /* private mode */
+  }
+}
 
 function SettleBody({ group, map, target, onDone }: { group: Group; map: Map<string, Member>; target: SettleTarget; onDone: () => void }) {
   const toast = useToast();
+  const sendRemind = useRemind();
   const record = useWrite("addSettlement");
   const undo = useWrite("deleteSettlement");
   const from = map.get(target.from);
@@ -53,7 +73,11 @@ function SettleBody({ group, map, target, onDone }: { group: Group; map: Map<str
   const iGet = Boolean(to?.isMe);
   // When I'm paid, show my own QR so they can scan it from my phone.
   const payee = to;
-  const vpa = payee?.upiId && isValidVpa(payee.upiId) ? payee.upiId : null;
+  const savedVpa = payee?.upiId && isValidVpa(payee.upiId) ? payee.upiId : null;
+  // No UPI ID on their profile: let the payer type or paste it here.
+  const [typed, setTyped] = useState(() => (savedVpa || !payee ? "" : readTyped(payee.id)));
+  const typedVpa = !savedVpa && iPay && isValidVpa(typed) ? typed.trim().toLowerCase() : null;
+  const vpa = savedVpa ?? typedVpa;
   const links = useMemo(() => {
     if (!vpa || !validAmount) return null;
     try {
@@ -65,6 +89,7 @@ function SettleBody({ group, map, target, onDone }: { group: Group; map: Map<str
 
   function save(method: "upi" | "cash" | "other") {
     if (!validAmount) return;
+    if (typedVpa && payee) writeTyped(payee.id, typedVpa);
     record.mutate(
       withKey({ groupId: group.id, body: { id: settlementId, fromMemberId: target.from, toMemberId: target.to, amountPaise: paise, method } }),
     );
@@ -142,7 +167,14 @@ function SettleBody({ group, map, target, onDone }: { group: Group; map: Map<str
                     </div>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <span className="text-[11px] font-semibold tracking-[0.06em] text-muted">{iGet ? "YOUR UPI" : "UPI ID"}</span>
+                    <span className="flex items-center justify-between text-[11px] font-semibold tracking-[0.06em] text-muted">
+                      {iGet ? "YOUR UPI" : "UPI ID"}
+                      {typedVpa && (
+                        <button type="button" onClick={() => setTyped("")} className="tracking-normal text-cobalt">
+                          Change
+                        </button>
+                      )}
+                    </span>
                     <button type="button" onClick={() => copy(vpa!, "UPI ID")} className="mt-0.5 flex w-full items-center gap-1.5 text-left">
                       <b className="truncate text-[15px] font-semibold">{vpa}</b>
                       <CopyIcon className="shrink-0 text-muted" />
@@ -165,35 +197,88 @@ function SettleBody({ group, map, target, onDone }: { group: Group; map: Map<str
                   <>{firstName(payee)} doesn't use UPI. Pay in cash, then record it here.</>
                 ) : (
                   <>
-                    {firstName(payee)} hasn't added a UPI ID yet.{" "}
-                    <a
-                      className="font-semibold text-cobalt"
-                      href={whatsappUrl(`Hey ${firstName(payee, "")}, what's your UPI ID? I want to settle ${group.name} on Let's Split.`)}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      Ask on WhatsApp
-                    </a>
+                    <label htmlFor="payee-upi" className="text-[11px] font-semibold tracking-[0.06em] text-muted">
+                      {firstName(payee).toUpperCase()}'S UPI ID
+                    </label>
+                    <div className="mt-1.5 flex items-center gap-2 rounded-[14px] bg-sheet px-3">
+                      <input
+                        id="payee-upi"
+                        value={typed}
+                        onChange={(e) => setTyped(e.target.value.replace(/\s/g, ""))}
+                        placeholder="name@okaxis"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        inputMode="email"
+                        className="h-11 min-w-0 flex-1 bg-transparent text-[16px] font-semibold outline-none placeholder:font-normal placeholder:text-muted"
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            setTyped((await navigator.clipboard.readText()).trim().replace(/\s/g, ""));
+                          } catch {
+                            toast("Couldn't read the clipboard");
+                          }
+                        }}
+                        className="shrink-0 text-[13px] font-semibold text-cobalt"
+                      >
+                        Paste
+                      </button>
+                    </div>
+                    {typed && !typedVpa ? (
+                      <p className="mt-2 text-[12.5px] text-neg">That doesn't look like a UPI ID yet.</p>
+                    ) : (
+                      <p className="mt-2 text-[12.5px] text-muted">
+                        {firstName(payee)} hasn't added one to Let's Split.{" "}
+                        <a
+                          className="font-semibold text-cobalt"
+                          href={whatsappUrl(`Hey ${firstName(payee, "")}, what's your UPI ID? I want to settle ${group.name} on Let's Split.`)}
+                          target="_blank"
+                          rel="noopener"
+                        >
+                          Ask on WhatsApp
+                        </a>
+                      </p>
+                    )}
                   </>
                 )}
               </div>
             ) : null}
 
-            {iPay && links && (
-              <div className="flex gap-2">
-                {APPS.map((a) => (
-                  <motion.a
-                    key={a.key}
-                    href={links[a.key]}
+            {iPay && !payee?.noUpi && (
+              <div>
+                <span className="mb-1.5 block px-1 text-[11px] font-semibold tracking-[0.06em] text-muted">PAY WITH</span>
+                <div className={`grid grid-cols-3 gap-2 transition-opacity ${links ? "" : "pointer-events-none opacity-35"}`} aria-disabled={!links}>
+                  {APPS.map((a) => (
+                    <motion.a
+                      key={a.key}
+                      href={links?.[a.key]}
+                      whileTap={{ scale: 0.95 }}
+                      transition={snappy}
+                      onClick={() => setTimeout(() => setStep("confirm"), 600)}
+                      className="flex h-[50px] items-center justify-center rounded-[16px] text-[14px] font-bold ring-1 ring-black/5"
+                      style={{ background: a.bg, color: a.fg }}
+                    >
+                      {a.label}
+                    </motion.a>
+                  ))}
+                  <motion.button
+                    type="button"
                     whileTap={{ scale: 0.95 }}
                     transition={snappy}
-                    onClick={() => setTimeout(() => setStep("confirm"), 600)}
-                    className="flex h-[52px] flex-1 items-center justify-center rounded-[16px] text-[14px] font-bold ring-1 ring-black/5"
-                    style={{ background: a.bg, color: a.fg }}
+                    onClick={async () => {
+                      if (!vpa) return;
+                      await copy(vpa, "UPI ID");
+                      setTimeout(() => setStep("confirm"), 600);
+                    }}
+                    className="flex h-[50px] flex-col items-center justify-center rounded-[16px] bg-card text-[13px] leading-tight font-bold ring-1 ring-black/5"
                   >
-                    {a.label}
-                  </motion.a>
-                ))}
+                    Other app
+                    <span className="text-[10.5px] font-medium text-muted">copies UPI ID</span>
+                  </motion.button>
+                </div>
+                {!links && validAmount && <p className="mt-2 px-1 text-[12.5px] text-muted">Add {firstName(payee)}'s UPI ID above to pay in one tap.</p>}
               </div>
             )}
 
@@ -217,14 +302,9 @@ function SettleBody({ group, map, target, onDone }: { group: Group; map: Map<str
               </div>
             )}
             {iGet && (
-              <a
-                href={whatsappUrl(remindText(target, map, group.name))}
-                target="_blank"
-                rel="noopener"
-                className="text-center text-[13.5px] font-semibold text-muted"
-              >
-                Remind {firstName(from)} on WhatsApp
-              </a>
+              <button type="button" onClick={() => void sendRemind(group.id, [target], map, group.name)} className="text-center text-[13.5px] font-semibold text-muted">
+                Remind {firstName(from)}
+              </button>
             )}
           </motion.div>
         ) : (

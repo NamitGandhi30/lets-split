@@ -13,7 +13,7 @@ import { setCurrentTripId, useCurrentTripId } from "../../lib/currentTrip";
 import { EmptyStack, TripStack } from "./TripStack";
 import { ExpenseRow, RecentSheet } from "./RecentSheet";
 import { SettleSheet, type SettleTarget } from "../settle/SettleSheet";
-import { remindText, whatsappUrl } from "../settle/remind";
+import { useRemind } from "../settle/remind";
 import { TripFormSheet } from "../trips/TripFormSheet";
 
 function Pill({ children, primary, onClick }: { children: string; primary?: boolean; onClick?: () => void }) {
@@ -48,6 +48,7 @@ export function HomeScreen() {
     [openGroups, firstId],
   );
   const [settle, setSettle] = useState<SettleTarget | null>(null);
+  const sendRemind = useRemind();
   const newTrip = params.get("new") === "1";
   const setNewTrip = (o: boolean) =>
     setParams((p) => {
@@ -127,8 +128,7 @@ export function HomeScreen() {
     if (!trip) return;
     const owed = transfers.filter((t) => t.to === myMember);
     if (!owed.length) return toast(net < 0 ? "You're the one who owes. Settle up instead?" : `Nobody owes you in ${trip.name}`);
-    const text = owed.map((t) => remindText(t, memberMap, trip.name)).join("\n\n");
-    window.open(whatsappUrl(text), "_blank", "noopener");
+    void sendRemind(trip.id, owed, memberMap, trip.name);
   }
 
   return (

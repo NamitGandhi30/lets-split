@@ -12,6 +12,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AppEnv } from "../context.ts";
 import { ApiError, fromPg, must, notFound } from "../errors.ts";
 import { EXPENSE_SELECT, toExpense, type ExpenseRow, type MemberRow } from "../mappers.ts";
+import { notifyExpenseAdded } from "../notify.ts";
 import { Balances, Comment, CommentCreate, Expense, ExpenseCreate, ExpensePage, ExpenseUpdate, HistoryEntry, IdempotencyHeader, SplitInput, Uuid } from "../schemas.ts";
 import { auth, body, errors, json, router } from "./util.ts";
 
@@ -169,7 +170,9 @@ expenseRoutes.openapi(
     const replayed = (res.data as { replayed?: boolean } | null)?.replayed === true;
 
     const row = must(await db.from("expenses").select(EXPENSE_SELECT).eq("id", b.id).single<ExpenseRow>());
-    return replayed ? c.json(toExpense(row), 200) : c.json(toExpense(row), 201);
+    const out = toExpense(row);
+    if (!replayed) notifyExpenseAdded(db, me, groupId, out, members);
+    return replayed ? c.json(out, 200) : c.json(out, 201);
   },
 );
 

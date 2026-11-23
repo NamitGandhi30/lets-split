@@ -18,7 +18,7 @@ import { Sheet } from "../../ui/Sheet";
 import { useToast } from "../../ui/Toast";
 import { ExpenseRow } from "../home/RecentSheet";
 import { SettleSheet, type SettleTarget } from "../settle/SettleSheet";
-import { remindText } from "../settle/remind";
+import { useRemind } from "../settle/remind";
 import { InviteSheet } from "./InviteSheet";
 import { TripFormSheet } from "./TripFormSheet";
 
@@ -42,6 +42,7 @@ export function TripScreen() {
   const [menu, setMenu] = useState(false);
   const [edit, setEdit] = useState(false);
   const [settle, setSettle] = useState<SettleTarget | null>(null);
+  const sendRemind = useRemind();
   const inviteOpen = params.get("invite") === "1";
   const setInvite = (o: boolean) =>
     setParams((p) => {
@@ -73,6 +74,15 @@ export function TripScreen() {
   }, [items]);
 
   const net = balances.data?.me?.netPaise ?? 0;
+  const transfers = balances.data?.transfers ?? [];
+  const myId = g?.myMemberId ?? null;
+  const myPayments = transfers.filter((t) => t.from === myId).sort((a, b) => b.amountPaise - a.amountPaise);
+
+  function settleUp() {
+    // One payment to make: straight to the UPI sheet. Otherwise show the list of payments.
+    if (myPayments.length === 1) return setSettle({ ...myPayments[0]! });
+    setTab("bal");
+  }
   const active = (members.data ?? []).filter((m) => !m.removedAt);
 
   return (
@@ -117,6 +127,21 @@ export function TripScreen() {
             <Amount paise={net} absolute size={{ cur: 15, whole: 20, dec: 13 }} />
           </div>
         </div>
+        {transfers.length > 0 && (
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.97 }}
+            transition={snappy}
+            onClick={settleUp}
+            className="mt-2.5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-card text-[15px] font-semibold text-ink"
+          >
+            {myPayments.length === 1
+              ? `Settle up · pay ${firstName(memberMap.get(myPayments[0]!.to))} ${formatINR(myPayments[0]!.amountPaise, { decimals: "auto" })}`
+              : net > 0
+                ? `Settle up · collect ${formatINR(net, { decimals: "auto" })}`
+                : "Settle up"}
+          </motion.button>
+        )}
       </div>
 
       <div className="relative mx-[18px] mt-3.5 mb-1.5 flex gap-1 rounded-full bg-[#E5E6EA] p-1" role="tablist">
@@ -186,10 +211,7 @@ export function TripScreen() {
               tripName={g?.name ?? ""}
               recent={(settlements.data ?? []).slice(0, 5)}
               onSettle={setSettle}
-              onRemind={(t) => {
-                const text = remindText(t, memberMap, g?.name ?? "");
-                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
-              }}
+              onRemind={(t) => void sendRemind(groupId, [t], memberMap, g?.name ?? "")}
             />
           )}
           <div className="h-[110px]" />

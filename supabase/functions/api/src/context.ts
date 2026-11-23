@@ -2,27 +2,27 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export interface Env {
   supabaseUrl: string;
-  /** Publishable (anon) key. The API talks to Postgres as the signed-in user, never as service role. */
+  /** Publishable (anon) key. The API talks to Postgres as the signed-in user. The one exception is src/push.ts, which reads push subscriptions of people you share a trip with. */
   supabaseKey: string;
   allowedOrigins: string[];
 }
 
 type DenoLike = { env: { get(k: string): string | undefined } };
 
-function read(name: string): string | undefined {
+export function readEnv(name: string): string | undefined {
   const deno = (globalThis as { Deno?: DenoLike }).Deno;
   if (deno) return deno.env.get(name);
   return (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env[name];
 }
 
 export function envFromRuntime(): Env {
-  const supabaseUrl = read("SUPABASE_URL");
-  const supabaseKey = read("SUPABASE_PUBLISHABLE_KEY") ?? read("SUPABASE_ANON_KEY");
+  const supabaseUrl = readEnv("SUPABASE_URL");
+  const supabaseKey = readEnv("SUPABASE_PUBLISHABLE_KEY") ?? readEnv("SUPABASE_ANON_KEY");
   if (!supabaseUrl || !supabaseKey) throw new Error("SUPABASE_URL and SUPABASE_ANON_KEY must be set");
   return {
     supabaseUrl,
     supabaseKey,
-    allowedOrigins: (read("ALLOWED_ORIGINS") ?? "*").split(",").map((s) => s.trim()).filter(Boolean),
+    allowedOrigins: (readEnv("ALLOWED_ORIGINS") ?? "*").split(",").map((s) => s.trim()).filter(Boolean),
   };
 }
 

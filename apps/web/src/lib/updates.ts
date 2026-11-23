@@ -54,7 +54,14 @@ async function hardRefresh(updateSW: (reload?: boolean) => Promise<void>) {
   }
   try {
     const regs = (await navigator.serviceWorker?.getRegistrations()) ?? [];
-    await Promise.all(regs.map((r) => r.unregister()));
+    // Unregistering would also delete the lock screen notification subscription, so keep a
+    // worker that has one. Clearing its caches below is enough for the reload to fetch the new build.
+    await Promise.all(
+      regs.map(async (r) => {
+        const sub = await r.pushManager?.getSubscription().catch(() => null);
+        if (!sub) await r.unregister();
+      }),
+    );
     if ("caches" in window) {
       const names = await caches.keys();
       // Only the service worker's app-shell caches; the data cache lives in localStorage.

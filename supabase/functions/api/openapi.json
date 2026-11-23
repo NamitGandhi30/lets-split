@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Let's Split API",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "Versioned REST API behind the Let's Split app. Money is always integer paise. Every write accepts an Idempotency-Key header, and ids for new groups and expenses are generated on the device."
   },
   "servers": [
@@ -1959,6 +1959,102 @@
           "me",
           "categories",
           "biggest"
+        ]
+      },
+      "PushConfig": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "False when the server has no VAPID keys yet."
+          },
+          "publicKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "VAPID public key for PushManager.subscribe (base64url)."
+          }
+        },
+        "required": [
+          "enabled",
+          "publicKey"
+        ]
+      },
+      "PushSubscriptionIn": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2000,
+            "format": "uri"
+          },
+          "keys": {
+            "type": "object",
+            "properties": {
+              "p256dh": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 200
+              },
+              "auth": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 100
+              }
+            },
+            "required": [
+              "p256dh",
+              "auth"
+            ]
+          }
+        },
+        "required": [
+          "endpoint",
+          "keys"
+        ]
+      },
+      "PushEndpoint": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2000,
+            "format": "uri"
+          }
+        },
+        "required": [
+          "endpoint"
+        ]
+      },
+      "NudgeResult": {
+        "type": "object",
+        "properties": {
+          "delivered": {
+            "type": "integer",
+            "description": "Devices that got the reminder. 0 means use WhatsApp instead."
+          }
+        },
+        "required": [
+          "delivered"
+        ]
+      },
+      "NudgeIn": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+          },
+          "amountPaise": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 10000000000
+          }
+        },
+        "required": [
+          "memberId"
         ]
       }
     },
@@ -4613,6 +4709,369 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Wrapped"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/push/config": {
+      "get": {
+        "tags": [
+          "push"
+        ],
+        "summary": "Whether push is on, and the key to subscribe with",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Push config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushConfig"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/push/subscription": {
+      "put": {
+        "tags": [
+          "push"
+        ],
+        "summary": "Save this device's push subscription",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+              "description": "Optional. Replaying a key returns the first response instead of writing again."
+            },
+            "required": false,
+            "description": "Optional. Replaying a key returns the first response instead of writing again.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscriptionIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "push"
+        ],
+        "summary": "Stop notifications on this device",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+              "description": "Optional. Replaying a key returns the first response instead of writing again."
+            },
+            "required": false,
+            "description": "Optional. Replaying a key returns the first response instead of writing again.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushEndpoint"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not a member of this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request doesn't add up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/groups/{groupId}/nudges": {
+      "post": {
+        "tags": [
+          "push"
+        ],
+        "summary": "Send someone a settle-up reminder on their lock screen",
+        "description": "Returns how many of their devices got it. 0 means they haven't turned on notifications (or have no account yet).",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11"
+            },
+            "required": true,
+            "name": "groupId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "3f1c2a7e-8a3b-4c55-9d0e-2b6f1a9c4e11",
+              "description": "Optional. Replaying a key returns the first response instead of writing again."
+            },
+            "required": false,
+            "description": "Optional. Replaying a key returns the first response instead of writing again.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NudgeIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NudgeResult"
                 }
               }
             }

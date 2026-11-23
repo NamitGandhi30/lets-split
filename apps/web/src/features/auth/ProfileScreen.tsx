@@ -13,6 +13,7 @@ import { bouncy, snappy } from "../../ui/motion";
 import { PageHeader } from "../../ui/PageHeader";
 import { useToast } from "../../ui/Toast";
 import { fieldCls, labelCls } from "../trips/TripFormSheet";
+import { PushSettingRow } from "../alerts/PushPrompt";
 
 export function ProfileScreen() {
   const me = useMe();
@@ -140,6 +141,11 @@ export function ProfileScreen() {
           Save
         </motion.button>
       </form>
+
+      <div className="mx-[18px] mt-5">
+        <span className={labelCls}>NOTIFICATIONS</span>
+        <PushSettingRow />
+      </div>
 
       {archived.length > 0 && (
         <div className="mx-[18px] mt-5">

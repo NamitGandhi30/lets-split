@@ -2,6 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError, fromPg, must, notFound } from "../errors.ts";
 import { toSettlement, type SettlementRow } from "../mappers.ts";
+import { notifySettlement } from "../notify.ts";
 import {
   ActivityFeed,
   IdempotencyHeader,
@@ -142,6 +143,7 @@ socialRoutes.openapi(
       if (error.code === "23503") throw new ApiError(422, "UNKNOWN_MEMBER", "Both people must be in this group.");
       throw fromPg(error);
     }
+    notifySettlement(db, me, groupId, { fromMemberId: b.fromMemberId, toMemberId: b.toMemberId, amountPaise: b.amountPaise, method: b.method });
     return c.json(toSettlement(data), 201);
   },
 );

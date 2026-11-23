@@ -10,6 +10,7 @@ import { ago, when } from "../../lib/people";
 import { Avatar } from "../../ui/Avatar";
 import { listItem } from "../../ui/motion";
 import { PageHeader } from "../../ui/PageHeader";
+import { PushPromptCard } from "./PushPrompt";
 
 const money = (v: unknown) => (typeof v === "number" ? formatINR(v, { decimals: "auto" }) : "");
 
@@ -69,6 +70,7 @@ export function AlertsScreen() {
   return (
     <PullToRefresh className="bg-sheet text-ink" onRefresh={() => feed.refetch()}>
       <PageHeader title="Alerts" />
+      <PushPromptCard />
       {feed.isPending ? (
         <div className="mx-[18px] mt-4 h-48 animate-pulse rounded-[var(--radius-card)] bg-card" />
       ) : items.length === 0 ? (

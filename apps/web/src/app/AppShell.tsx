@@ -1,10 +1,11 @@
 import { useIsMutating, useIsRestoring } from "@tanstack/react-query";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, type Transition } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { Navigate, useLocation, useNavigationType, useOutlet } from "react-router";
+import { Navigate, useLocation, useNavigate, useNavigationType, useOutlet } from "react-router";
 import { useMe } from "../api/hooks";
 import { useChangePings } from "../lib/realtime";
 import { handKeyboardTo, holdKeyboard } from "../lib/keyboard";
+import { onNotificationOpen, syncPush } from "../lib/push";
 import { useBack } from "../lib/useBack";
 import { CloudOffIcon } from "../ui/icons";
 import { snappy, tf } from "../ui/motion";
@@ -104,6 +105,13 @@ export function AppShell() {
   const dir = useDirection();
   const reduce = useReducedMotion();
   const stacked = isStacked(loc.pathname);
+  const nav = useNavigate();
+  // Lock screen notifications: keep this phone's subscription saved, and open taps in place.
+  const signedIn = Boolean(me.data);
+  useEffect(() => {
+    if (signedIn) void syncPush();
+  }, [signedIn]);
+  useEffect(() => onNotificationOpen((path) => nav(path)), [nav]);
   useEffect(() => {
     const bg = screenBg(loc.pathname);
     document.documentElement.style.setProperty("--screen-bg", bg);
